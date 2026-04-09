@@ -1,0 +1,110 @@
+import React, { useState, useEffect } from 'react';
+
+function Dashboard() {
+  const [locale, setLocale] = useState('en-US');
+  const [currentDate, setCurrentDate] = useState('');
+  const [formattedNumber, setFormattedNumber] = useState('');
+  const [countryName, setCountryName] = useState('');
+
+  useEffect(() => {
+    const now = new Date();
+
+    // 1. Date & time
+    const dateString = now.toLocaleString(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    setCurrentDate(dateString);
+
+    // 2. Format number like MMDDYYYY
+    const rawNumber = Number(
+      `${String(now.getMonth() + 1).padStart(2, '0')}` +
+      `${String(now.getDate()).padStart(2, '0')}` +
+      `${now.getFullYear()}`
+    );
+
+    // divide by 100 → last 2 digits become decimals
+    const formatted = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(rawNumber / 100);
+
+    setFormattedNumber(formatted);
+
+    // 3. Country name in that locale
+    const region = locale.split('-')[1]; // "US", "JP", etc.
+    const displayNames = new Intl.DisplayNames([locale], { type: 'region' });
+    setCountryName(displayNames.of(region));
+
+  }, [locale]);
+
+  return (
+    <div style={styles.container}>
+      <h1 style={styles.header}>Dashboard</h1>
+
+      <div style={styles.menu}>
+        <label style={styles.label}>Choose a locale:</label>
+        <select
+          value={locale}
+          onChange={(e) => setLocale(e.target.value)}
+          style={styles.dropdown}
+        >
+          <option value="en-US">en-US</option>
+          <option value="ja-JP">ja-JP</option>
+          <option value="de-DE">de-DE</option>
+          <option value="ar-EG">ar-EG</option>
+        </select>
+      </div>
+
+      {/* ✅ DISPLAY IN UI (instead of alert) */}
+      <div style={styles.result}>
+        <p><strong>Date & Time:</strong> {currentDate}</p>
+        <p><strong>Country:</strong> {countryName}</p>
+        <p><strong>Formatted Number:</strong> {formattedNumber}</p>
+      </div>
+    </div>
+  );
+}
+
+const styles = {
+  container: {
+    padding: '20px',
+    fontFamily: 'Arial, sans-serif',
+    maxWidth: '400px',
+    margin: 'auto',
+    border: '1px solid #ccc',
+    borderRadius: '8px',
+  },
+  header: {
+    textAlign: 'center',
+    marginBottom: '20px',
+  },
+  menu: {
+    display: 'flex',
+    flexDirection: 'column',
+    marginBottom: '20px',
+  },
+  label: {
+    marginBottom: '10px',
+    fontWeight: 'bold',
+    color: 'black'
+  },
+  dropdown: {
+    padding: '8px',
+    fontSize: '16px',
+    width: '100%',
+    color: 'black'
+  },
+  result: {
+    marginTop: '20px',
+    padding: '10px',
+    background: '#f5f5f5',
+    borderRadius: '6px',
+    color: 'black'
+  }
+};
+
+export default Dashboard;

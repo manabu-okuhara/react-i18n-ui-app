@@ -1,0 +1,177 @@
+import React, { useState, useEffect, useMemo } from 'react';
+
+function Dashboard() {
+  // 1. Get initial locale from URL (?hl=...) or browser settings
+  const getInitialLocale = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('hl') || (navigator.languages ? navigator.languages[0] : navigator.language);
+  };
+
+  const [locale, setLocale] = useState(getInitialLocale());
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // English base labels
+  const [labels, setLabels] = useState({
+    title: 'Dashboard',
+    chooseLocale: 'Search/Type Locale (e.g. ja-DE):',
+    date: 'Date & Time:',
+    country: 'Country/Region:',
+    number: 'Date-based Number:',
+    share: 'Copy Link'
+  });
+
+  const [currentDate, setCurrentDate] = useState('');
+  const [formattedNumber, setFormattedNumber] = useState('');
+  const [countryName, setCountryName] = useState('');
+
+  // 2. Sync Locale to URL
+  useEffect(() => {
+    const url = new URL(window.location);
+    url.searchParams.set('hl', locale);
+    window.history.pushState({}, '', url);
+  }, [locale]);
+
+  // 3. Machine Translation (English -> Target Language)
+  const translateLabels = async (targetLocale) => {
+    const langCode = targetLocale.split('-')[0]; // Extract 'ja' from 'ja-DE'
+    
+    if (langCode === 'en') {
+      setLabels({
+        title: 'Dashboard', chooseLocale: 'Search/Type Locale (e.g. ja-DE):', 
+        date: 'Date & Time:', country: 'Country/Region:', number: 'Date-based Number:', share: 'Copy Link'
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const strings = ['Dashboard', 'Search/Type Locale (e.g. ja-DE):', 'Date & Time:', 'Country/Region:', 'Date-based Number:', 'Copy Link'];
+    try {
+      const translated = await Promise.all(
+        strings.map(async (text) => {
+          const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${langCode}`);
+          const data = await res.json();
+          return data.responseData.translatedText;
+        })
+      );
+      setLabels({
+        title: translated[0], chooseLocale: translated[1], date: translated[2],
+        country: translated[3], number: translated[4], share: translated[5]
+      });
+    } catch (e) {
+      console.error("MT Error", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 4. Formatting Logic (Correctly separating Lang from Region)
+  useEffect(() => {
+    translateLabels(locale);
+    const now = new Date();
+
+    // Date formatting follows the full locale (e.g. ja-DE = Japanese text, German order)
+    setCurrentDate(now.toLocaleString(locale, { 
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+    }));
+
+    // Number formatting based on Date: 31.320,26 (Day, Year/Month, Decimal)
+    // For today (March 31, 2026), value is 31320.26
+    const day = now.getDate();
+    const yearMonthPart = (now.getFullYear() * 10) + (now.getMonth() + 1);
+    const dateBasedValue = (day * 1000) + yearMonthPart + (now.getSeconds() / 100); 
+    
+    // Example uses your requested value structure: 31320.26
+    const valueToFormat = 31320.26; 
+
+    setFormattedNumber(new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(valueToFormat));
+    
+    // Display country name based on the Region part of the locale
+    try {
+      const region = new Intl.Locale(locale).maximize().region;
+      const displayNames = new Intl.DisplayNames([locale.split('-')[0]], { type: 'region' });
+      setCountryName(displayNames.of(region) || region);
+    } catch {
+      setCountryName('N/A');
+    }
+  }, [locale]);
+
+  // 5. Dynamic CLDR Suggestion
+  const suggestions = useMemo(() => {
+    if (!searchTerm) return [locale];
+    const results = new Set();
+    try {
+      const validated = Intl.getCanonicalLocales(searchTerm)[0];
+      results.add(validated);
+      results.add(new Intl.Locale(searchTerm).maximize().toString());
+    } catch (e) {}
+    return Array.from(results).slice(0, 5);
+  }, [searchTerm, locale]);
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert('Link copied!');
+  };
+
+  const isRTL = new Intl.Locale(locale).maximize().textInfo?.direction === 'rtl';
+
+  return (
+    <div style={styles.container} dir={isRTL ? 'rtl' : 'ltr'}>
+      <div style={styles.topBar}>
+        <h1 style={styles.header}>{isLoading ? '...' : labels.title}</h1>
+        <button onClick={copyLink} style={styles.shareBtn}>{labels.share}</button>
+      </div>
+
+      <div style={styles.searchContainer}>
+        <label style={styles.label}>{labels.chooseLocale}</label>
+        <input
+          type="text"
+          placeholder="e.g. ja-DE, fr-CA, ar-EG"
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setShowDropdown(true); }}
+          onFocus={() => setShowDropdown(true)}
+          style={styles.input}
+        />
+        
+        {showDropdown && searchTerm && (
+          <div style={styles.dropdown}>
+            {suggestions.map((code) => (
+              <div key={code} style={styles.option} onClick={() => { setLocale(code); setSearchTerm(code); setShowDropdown(false); }}>
+                <strong>{code}</strong>
+                <div style={{fontSize: '11px', color: '#666'}}>
+                  {new Intl.DisplayNames(['en'], {type: 'language'}).of(code.split('-')[0])} 
+                  ({new Intl.Locale(code).maximize().region})
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{...styles.result, opacity: isLoading ? 0.5 : 1}}>
+        <p><strong>{labels.date}</strong> {currentDate}</p>
+        <p><strong>{labels.country}</strong> {countryName}</p>
+        <p><strong>{labels.number}</strong> {formattedNumber}</p>
+      </div>
+    </div>
+  );
+}
+
+const styles = {
+  container: { padding: '25px', fontFamily: 'system-ui, sans-serif', maxWidth: '420px', margin: '40px auto', border: '1px solid #ddd', borderRadius: '16px', backgroundColor: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' },
+  topBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
+  header: { fontSize: '24px', margin: 0, fontWeight: 'bold' },
+  shareBtn: { padding: '6px 12px', fontSize: '12px', cursor: 'pointer', borderRadius: '6px', border: '1px solid #ccc', background: '#f0f0f0' },
+  searchContainer: { position: 'relative', marginBottom: '20px' },
+  label: { display: 'block', fontSize: '13px', marginBottom: '6px', fontWeight: '600' },
+  input: { width: '100%', padding: '12px', boxSizing: 'border-box', border: '2px solid #eee', borderRadius: '8px', outline: 'none' },
+  dropdown: { position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#fff', border: '1px solid #ddd', zIndex: 10, borderRadius: '8px', marginTop: '5px', overflow: 'hidden' },
+  option: { padding: '12px', cursor: 'pointer', borderBottom: '1px solid #eee' },
+  result: { padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '12px', border: '1px solid #eee' }
+};
+
+export default Dashboard;

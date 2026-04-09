@@ -1,0 +1,178 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import enUS from './locales/en-US.json';
+import jaJP from './locales/ja-JP.json';
+import frCA from './locales/fr-CA.json';
+import arEG from './locales/ar-EG.json';
+
+const MESSAGES = {
+  'en-US': enUS,
+  'ja-JP': jaJP,
+  'fr-CA': frCA,
+  'ar-EG': arEG
+};
+
+function Dashboard() {
+  const getInitialLocale = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('hl') || (navigator.languages ? navigator.languages[0] : navigator.language);
+  };
+
+  const [locale, setLocale] = useState(getInitialLocale());
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const [labels, setLabels] = useState({
+    title: 'Dashboard',
+    chooseLocale: 'Search/Type Locale:',
+    date: 'Date & Time:',
+    country: 'Country/Region:',
+    number: 'Date-based Number:',
+    share: 'Copy Link'
+  });
+
+  const [currentDate, setCurrentDate] = useState('');
+  const [formattedNumber, setFormattedNumber] = useState('');
+  const [countryName, setCountryName] = useState('');
+
+  useEffect(() => {
+    const url = new URL(window.location);
+    url.searchParams.set('hl', locale);
+    window.history.pushState({}, '', url);
+  }, [locale]);
+
+  // FIX: Force the translation API to use ONLY the language part (e.g., 'de')
+  const translateLabels = async (targetLocale) => {
+    const langCode = targetLocale.split('-')[0].toLowerCase();
+    
+    if (langCode === 'en') {
+      setLabels({
+        title: 'Dashboard', chooseLocale: 'Search/Type Locale:', 
+        date: 'Date & Time:', country: 'Country/Region:', number: 'Date-based Number:', share: 'Copy Link'
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const strings = ['Dashboard', 'Search/Type Locale:', 'Date & Time:', 'Country/Region:', 'Date-based Number:', 'Copy Link'];
+    try {
+      const translated = await Promise.all(
+        strings.map(async (text) => {
+          // Explicitly setting langpair to English|TargetLanguage (e.g. en|de)
+          const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${langCode}`);
+          const data = await res.json();
+          return data.responseData.translatedText;
+        })
+      );
+      setLabels({
+        title: translated[0], chooseLocale: translated[1], date: translated[2],
+        country: translated[3], number: translated[4], share: translated[5]
+      });
+    } catch (e) {
+      console.error("MT Error", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    translateLabels(locale);
+    const now = new Date();
+
+    // Text language is 'de', but formatting is 'DE' (German format)
+    setCurrentDate(now.toLocaleString(locale, { 
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+    }));
+
+    // Setting the number to match your 31.320,26 requirement
+    const valueToFormat = (now.getMonth() + 1) *10000 + now.getDate() * 100 + (now.getFullYear() % 100) + (now.getFullYear() % 100 / 100);
+
+    setFormattedNumber(new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(valueToFormat));
+    
+    try {
+      const region = new Intl.Locale(locale).maximize().region;
+      // Country name is displayed in the language chosen (e.g. 'Deutschland' in German)
+      const displayNames = new Intl.DisplayNames([locale.split('-')[0]], { type: 'region' });
+      setCountryName(displayNames.of(region) || region);
+    } catch {
+      setCountryName('N/A');
+    }
+  }, [locale]);
+
+  const suggestions = useMemo(() => {
+    if (!searchTerm) return [locale];
+    const results = new Set();
+    try {
+      const validated = Intl.getCanonicalLocales(searchTerm)[0];
+      results.add(validated);
+      results.add(new Intl.Locale(searchTerm).maximize().toString());
+    } catch (e) {}
+    return Array.from(results).slice(0, 5);
+  }, [searchTerm, locale]);
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert('Link copied!');
+  };
+
+  const isRTL = new Intl.Locale(locale).maximize().textInfo?.direction === 'rtl';
+
+  return (
+    <div style={styles.container} dir={isRTL ? 'rtl' : 'ltr'}>
+      <div style={styles.topBar}>
+        <h1 style={styles.header}>{isLoading ? '...' : labels.title}</h1>
+        <button onClick={copyLink} style={styles.shareBtn}>{labels.share}</button>
+      </div>
+
+      <div style={styles.searchContainer}>
+        <label style={styles.label}>{labels.chooseLocale}</label>
+        <input
+          type="text"
+          placeholder="e.g. de-DE, ja-JP"
+          value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setShowDropdown(true); }}
+          onFocus={() => setShowDropdown(true)}
+          style={styles.input}
+        />
+        
+        {showDropdown && searchTerm && (
+          <div style={styles.dropdown}>
+            {suggestions.map((code) => (
+              <div key={code} style={styles.option} onClick={() => { setLocale(code); setSearchTerm(code); setShowDropdown(false); }}>
+                <strong style={{color: 'black'}}>{code}</strong>
+                <div style={{fontSize: '11px', color: 'black', opacity: 0.7}}>
+                  {new Intl.DisplayNames(['en'], {type: 'language'}).of(code.split('-')[0])} 
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{...styles.result, opacity: isLoading ? 0.5 : 1}}>
+        <p style={styles.text}><strong>{labels.date}</strong> {currentDate}</p>
+        <p style={styles.text}><strong>{labels.country}</strong> {countryName}</p>
+        <p style={styles.text}><strong>{labels.number}</strong> {formattedNumber}</p>
+      </div>
+    </div>
+  );
+}
+
+const styles = {
+  container: { padding: '25px', fontFamily: 'sans-serif', maxWidth: '420px', margin: '40px auto', border: '1px solid #ddd', borderRadius: '16px', backgroundColor: '#fff', color: 'black' },
+  topBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
+  header: { fontSize: '24px', margin: 0, fontWeight: 'bold', color: 'black' },
+  shareBtn: { padding: '6px 12px', fontSize: '12px', cursor: 'pointer', borderRadius: '6px', border: '1px solid #ccc', background: '#f0f0f0', color: 'black' },
+  searchContainer: { position: 'relative', marginBottom: '20px' },
+  label: { display: 'block', fontSize: '13px', marginBottom: '6px', fontWeight: '600', color: 'black' },
+  input: { width: '100%', padding: '12px', boxSizing: 'border-box', border: '2px solid #eee', borderRadius: '8px', outline: 'none', color: 'black' },
+  dropdown: { position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#fff', border: '1px solid #ddd', zIndex: 10, borderRadius: '8px', marginTop: '5px', overflow: 'hidden' },
+  option: { padding: '12px', cursor: 'pointer', borderBottom: '1px solid #eee', color: 'black' },
+  result: { padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '12px', border: '1px solid #eee' },
+  text: { color: 'black', margin: '8px 0' }
+};
+
+export default Dashboard;

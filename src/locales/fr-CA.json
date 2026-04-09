@@ -1,0 +1,9 @@
+{
+  "title": "TTableau de bord du système",
+  "chooseLocale": "Veuillez rechercher ou saisir un paramètre régional pour mettre à jour l'affichage :",
+  "dateSentence": "La date et l'heure locales actuelles sont enregistrées comme étant {currentDate}.",
+  "countrySentence": "Selon votre sélection, le pays ou la région désigné est {countryName}.",
+  "numberSentence": "La valeur calculée basée sur la date pour cette session est {formattedNumber}.",
+  "share": "Copier le lien",
+  "pluralSentence": "{count, plural, one {Il y a # pomme.} other {Il y a # pommes.}}"
+}

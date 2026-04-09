@@ -1,0 +1,9 @@
+{
+  "title": "System Dashboard",
+  "chooseLocale": "Please search for or type a locale to update the view:",
+  "dateSentence": "The current local date and time is recorded as {currentDate}.",
+  "countrySentence": "Based on your selection, the designated country or region is {countryName}.",
+  "numberSentence": "The calculated date-based value for this session is {formattedNumber}.",
+  "share": "Copy Link",
+  "pluralSentence": "{count, plural, one {There is # apple.} other {There are # apples.}}"
+}
