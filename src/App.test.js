@@ -1,8 +1,49 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+beforeEach(() => {
+  Object.defineProperty(window.navigator, 'languages', {
+    configurable: true,
+    value: ['en-US']
+  });
+  Object.defineProperty(window.navigator, 'language', {
+    configurable: true,
+    value: 'en-US'
+  });
+  Object.defineProperty(window.navigator, 'clipboard', {
+    configurable: true,
+    value: {
+      writeText: jest.fn().mockResolvedValue(undefined)
+    }
+  });
+  window.history.replaceState({}, '', '/');
+});
+
+test('renders localized dashboard content for a supported locale', () => {
+  window.history.replaceState({}, '', '/?hl=ja-JP');
+
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+
+  expect(screen.getByRole('heading', { name: 'システムダッシュボード' })).toBeInTheDocument();
+  expect(screen.getByLabelText('表示を更新するには、ロケールを検索または入力してください：')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'リンクをコピー' })).toBeInTheDocument();
+});
+
+test('falls back to en-US messages for an unsupported locale', () => {
+  window.history.replaceState({}, '', '/?hl=de-DE');
+
+  render(<App />);
+
+  expect(screen.getByRole('heading', { name: 'System Dashboard' })).toBeInTheDocument();
+  expect(screen.getByLabelText('Please search for or type a locale to update the view:')).toBeInTheDocument();
+});
+
+test('applies rtl direction for Arabic', () => {
+  window.history.replaceState({}, '', '/?hl=ar-EG');
+
+  const { container } = render(<App />);
+  const dashboard = container.querySelector('[dir="rtl"]');
+
+  expect(dashboard).not.toBeNull();
+  expect(screen.getByRole('button', { name: 'نسخ الرابط' })).toBeInTheDocument();
 });

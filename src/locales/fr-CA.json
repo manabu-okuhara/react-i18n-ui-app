@@ -1,9 +1,12 @@
 {
-  "title": "TTableau de bord du système",
-  "chooseLocale": "Veuillez rechercher ou saisir un paramètre régional pour mettre à jour l'affichage :",
-  "dateSentence": "La date et l'heure locales actuelles sont enregistrées comme étant {currentDate}.",
-  "countrySentence": "Selon votre sélection, le pays ou la région désigné est {countryName}.",
-  "numberSentence": "La valeur calculée basée sur la date pour cette session est {formattedNumber}.",
+  "title": "Tableau de bord du systeme",
+  "chooseLocale": "Veuillez rechercher ou saisir un parametre regional pour mettre a jour l'affichage :",
+  "searchPlaceholder": "ex. de-DE, ja-JP",
+  "dateSentence": "La date et l'heure locales actuelles sont enregistrees comme etant {currentDate}.",
+  "countrySentence": "Selon votre selection, le pays ou la region designe est {countryName}.",
+  "numberSentence": "La valeur calculee basee sur la date pour cette session est {formattedNumber}.",
   "share": "Copier le lien",
+  "copyConfirmation": "Lien copie !",
+  "copyError": "Impossible de copier le lien.",
   "pluralSentence": "{count, plural, one {Il y a # pomme.} other {Il y a # pommes.}}"
 }

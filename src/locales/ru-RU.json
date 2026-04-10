@@ -1,9 +1,12 @@
 {
-  "title": "System Dashboard",
-  "chooseLocale": "Please search for or type a locale to update the view:",
-  "dateSentence": "The current local date and time is recorded as {currentDate}.",
-  "countrySentence": "Based on your selection, the designated country or region is {countryName}.",
-  "numberSentence": "The calculated date-based value for this session is {formattedNumber}.",
-  "share": "Copy Link",
-  "pluralSentence": "{count, plural, one {Здесь # яблоко.} count, plural, few {Здесь # яблока.} other {Здесь # яблок.}}"
+  "title": "Системная панель управления",
+  "chooseLocale": "Введите или найдите локаль, чтобы обновить представление:",
+  "searchPlaceholder": "например: de-DE, ja-JP",
+  "dateSentence": "Текущие локальные дата и время: {currentDate}.",
+  "countrySentence": "Согласно вашему выбору, указанная страна или регион: {countryName}.",
+  "numberSentence": "Вычисленное значение для этой сессии: {formattedNumber}.",
+  "share": "Скопировать ссылку",
+  "copyConfirmation": "Ссылка скопирована!",
+  "copyError": "Не удалось скопировать ссылку.",
+  "pluralSentence": "{count, plural, one {Здесь # яблоко.} few {Здесь # яблока.} many {Здесь # яблок.} other {Здесь # яблока.}}"
 }

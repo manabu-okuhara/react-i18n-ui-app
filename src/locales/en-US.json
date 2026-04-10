@@ -1,9 +1,12 @@
 {
   "title": "System Dashboard",
   "chooseLocale": "Please search for or type a locale to update the view:",
+  "searchPlaceholder": "e.g. de-DE, ja-JP",
   "dateSentence": "The current local date and time is recorded as {currentDate}.",
   "countrySentence": "Based on your selection, the designated country or region is {countryName}.",
   "numberSentence": "The calculated date-based value for this session is {formattedNumber}.",
   "share": "Copy Link",
+  "copyConfirmation": "Link copied!",
+  "copyError": "Unable to copy the link.",
   "pluralSentence": "{count, plural, one {There is # apple.} other {There are # apples.}}"
 }

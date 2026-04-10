@@ -1,9 +1,12 @@
 {
   "title": "لوحة تحكم النظام",
   "chooseLocale": "يرجى البحث عن أو كتابة الإعدادات المحلية لتحديث العرض:",
+  "searchPlaceholder": "مثال: de-DE, ja-JP",
   "dateSentence": "تم تسجيل التاريخ والوقت المحلي الحالي في {currentDate}.",
   "countrySentence": "بناءً على اختيارك، فإن البلد أو المنطقة المحددة هي {countryName}.",
   "numberSentence": "القيمة المحسوبة بناءً على التاريخ لهذه الجلسة هي {formattedNumber}.",
   "share": "نسخ الرابط",
+  "copyConfirmation": "تم نسخ الرابط.",
+  "copyError": "تعذر نسخ الرابط.",
   "pluralSentence": "{count, plural, zero {لا توجد تفاحات.} one {هناك تفاحة واحدة.} two {هناك تفاحتان.} few {هناك # تفاحات.} many {هناك # تفاحة.} other {هناك # تفاحة.}}"
 }
