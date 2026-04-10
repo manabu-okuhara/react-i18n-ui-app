@@ -1,0 +1,7 @@
+{
+  "localeFallbacks": {
+    "ja": ["ja-JP", "en-JP", "en-US", "en"],
+    "fr": ["fr-CA", "en-FR", "en-US", "en"]
+  }
+}
+
