@@ -4,8 +4,10 @@ import jaJP from './locales/ja-JP.json';
 import frCA from './locales/fr-CA.json';
 import arEG from './locales/ar-EG.json';
 import ruRU from './locales/ru-RU.json';
+import customerLocaleConfig from './customerLocaleConfig.json';
+import { resolveLocale } from './localeResolver';
 
-const DEFAULT_LOCALE = 'en-US';
+
 const RTL_LANGUAGES = ['ar', 'he', 'fa', 'ur', 'ps', 'syr', 'dv'];
 
 const MESSAGES = {
@@ -16,45 +18,10 @@ const MESSAGES = {
   'ru-RU': ruRU
 };
 
-const LANGUAGE_FALLBACKS = {
-  ja: ['ja-JP', 'en-JP', 'en-US', 'en'],
-  fr: ['fr-FR', 'fr-CA', 'en-FR', 'en-US', 'en'],
-  ar: ['ar-EG', 'en-EG', 'en-US', 'en'],
-  ru: ['ru-RU', 'en-RU', 'en-US', 'en']
-};
-
 function getInitialLocale() {
   const params = new URLSearchParams(window.location.search);
   return params.get('hl') || (navigator.languages ? navigator.languages[0] : navigator.language);
 }
-
-function getLanguage(locale) {
-  return locale.split('-')[0].toLowerCase();
-}
-
-function resolveLocale(locale) {
-  if (!locale) {
-    return DEFAULT_LOCALE;
-  }
-
-  let normalized = locale;
-  try {
-    [normalized] = Intl.getCanonicalLocales(locale);
-  } catch {
-    normalized = locale;
-  }
-
-  if (MESSAGES[normalized]) {
-    return normalized;
-  }
-
-  const language = getLanguage(normalized);
-  const fallbackChain = LANGUAGE_FALLBACKS[language] || [DEFAULT_LOCALE, 'en'];
-  const supportedFallback = fallbackChain.find((candidate) => MESSAGES[candidate]);
-
-  return supportedFallback || DEFAULT_LOCALE;
-}
-
 
 function formatMessage(message, values = {}, locale) {
   if (!message) {
@@ -108,7 +75,8 @@ function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const effectiveLocale = resolveLocale(locale);
+  const customerFallbacks = customerLocaleConfig.localeFallbacks || {};
+  const effectiveLocale = resolveLocale(locale, MESSAGES, customerFallbacks);
   const messages = MESSAGES[effectiveLocale];
 
   useEffect(() => {
