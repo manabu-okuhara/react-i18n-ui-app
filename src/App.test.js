@@ -38,6 +38,22 @@ test('falls back to en-US messages for an unsupported locale', () => {
   expect(screen.getByLabelText('Please search for or type a locale to update the view:')).toBeInTheDocument();
 });
 
+test('falls back to ja-JP for a language-only Japanese locale', () => {
+  window.history.replaceState({}, '', '/?hl=ja');
+
+  render(<App />);
+
+  expect(screen.getByRole('heading', { name: 'システムダッシュボード' })).toBeInTheDocument();
+});
+
+test('falls back to fr-CA for a language-only French locale', () => {
+  window.history.replaceState({}, '', '/?hl=fr');
+
+  render(<App />);
+
+  expect(screen.getByRole('heading', { name: 'Tableau de bord du systeme' })).toBeInTheDocument();
+});
+
 test('applies rtl direction for Arabic', () => {
   window.history.replaceState({}, '', '/?hl=ar-EG');
 
