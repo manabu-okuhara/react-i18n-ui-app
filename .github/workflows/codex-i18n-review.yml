@@ -13,7 +13,9 @@ jobs:
       contents: read
       pull-requests: write
     outputs:
-      final_message: ${{ steps.run_codex.outputs.final-message }}
+      final_message: ${{ steps.collect_message.outputs.final_message }}
+      codex_succeeded: ${{ steps.codex_status.outputs.codex_succeeded }}
+
     steps:
       - uses: actions/checkout@v5
         with:
@@ -22,6 +24,7 @@ jobs:
 
       - name: Run Codex i18n review
         id: run_codex
+        continue-on-error: true
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
@@ -29,6 +32,44 @@ jobs:
           output-file: codex-i18n-review.md
           safety-strategy: drop-sudo
           sandbox: read-only
+
+      - name: Record Codex status
+        id: codex_status
+        run: |
+          if [ -f codex-i18n-review.md ]; then
+            echo "codex_succeeded=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "codex_succeeded=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Write fallback report when Codex fails
+        if: steps.codex_status.outputs.codex_succeeded != 'true'
+        run: |
+          cat > codex-i18n-review.md <<'EOF'
+          # Codex I18n Review
+
+          Codex review could not be completed automatically.
+
+          Possible causes:
+          - OpenAI API quota exceeded
+          - billing not enabled for the API project
+          - invalid or expired OPENAI_API_KEY
+          - temporary OpenAI service issue
+
+          Next steps:
+          1. Check OpenAI API billing and usage.
+          2. Verify the GitHub Actions secret OPENAI_API_KEY.
+          3. Re-run this workflow after fixing the API access issue.
+          EOF
+
+      - name: Collect review message
+        id: collect_message
+        run: |
+          {
+            echo "final_message<<EOF"
+            cat codex-i18n-review.md
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Upload Codex review artifact
         uses: actions/upload-artifact@v4
@@ -45,7 +86,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   post_pr_comment:
-    if: github.event_name == 'pull_request' && needs.codex_review.outputs.final_message != ''
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     needs: codex_review
     permissions:
@@ -64,3 +105,4 @@ jobs:
               issue_number: context.payload.pull_request.number,
               body: process.env.CODEX_FINAL_MESSAGE,
             });
+
