@@ -8,5 +8,5 @@
   "share": "Copy Link",
   "copyConfirmation": "Link copied!",
   "copyError": "Unable to copy the link.",
-  "pluralSentence": "{count, plural, one {There is # apple.} other {There are # apples.}}"
+  "pluralSentence": "{exampleOne, plural, one {There is # apple.} other {There are # apples.}} {exampleThree, plural, one {There is # apple.} other {There are # apples.}} {exampleFive, plural, one {There is # apple.} other {There are # apples.}} {count, plural, one {There is # apple.} other {There are # apples.}}"
 }

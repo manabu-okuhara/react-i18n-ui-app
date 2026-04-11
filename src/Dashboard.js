@@ -23,31 +23,36 @@ function getInitialLocale() {
   return params.get('hl') || (navigator.languages ? navigator.languages[0] : navigator.language);
 }
 
+function formatPluralBlocks(message, locale, values) {
+  return message.replace(
+    /\{(\w+),\s*plural,\s*((?:\w+\s*{.+?}\s*)+)\}/g,
+    (_match, variableName, rulesString) => {
+      const count = values[variableName];
+      const rule = new Intl.PluralRules(locale).select(count);
+      const parts = rulesString.match(/(\w+)\s*{(.+?)}/g) || [];
+      const ruleMap = {};
+
+      parts.forEach((part) => {
+        const match = part.match(/(\w+)\s*{(.+?)}/);
+        if (match) {
+          ruleMap[match[1]] = match[2];
+        }
+      });
+
+      const localizedPattern = ruleMap[rule] || ruleMap.other || '';
+      return localizedPattern.replace('#', new Intl.NumberFormat(locale).format(count));
+    }
+  );
+}
+
 function formatMessage(message, values = {}, locale) {
   if (!message) {
     return '';
   }
 
-  const pluralMatch = message.match(/^\{(\w+),\s*plural,\s*(.+)\}$/);
-  if (pluralMatch) {
-    const [, variableName, rulesString] = pluralMatch;
-    const count = values[variableName];
-    const rule = new Intl.PluralRules(locale).select(count);
-    const parts = rulesString.match(/(\w+)\s*{(.+?)}/g) || [];
-    const ruleMap = {};
+  const withPluralContent = formatPluralBlocks(message, locale, values);
 
-    parts.forEach((part) => {
-      const match = part.match(/(\w+)\s*{(.+?)}/);
-      if (match) {
-        ruleMap[match[1]] = match[2];
-      }
-    });
-
-    const localizedPattern = ruleMap[rule] || ruleMap.other || '';
-    return localizedPattern.replace('#', new Intl.NumberFormat(locale).format(count));
-  }
-
-  return message.replace(/{(\w+)}/g, (match, key) => (
+  return withPluralContent.replace(/{(\w+)}/g, (match, key) => (
     values[key] !== undefined ? values[key] : match
   ));
 }
@@ -114,7 +119,16 @@ function Dashboard() {
       dateDisplay: formatMessage(messages.dateSentence, { currentDate: dateString }, effectiveLocale),
       countryDisplay: formatMessage(messages.countrySentence, { countryName: getRegionName(effectiveLocale) }, effectiveLocale),
       numberDisplay: formatMessage(messages.numberSentence, { formattedNumber: numberString }, effectiveLocale),
-      pluralDisplay: formatMessage(messages.pluralSentence, { count }, effectiveLocale)
+      pluralDisplay: formatMessage(
+        messages.pluralSentence,
+        {
+          exampleOne: 1,
+          exampleThree: 3,
+          exampleFive: 5,
+          count
+        },
+        effectiveLocale
+      )
     };
   }, [effectiveLocale, messages]);
 
