@@ -8,5 +8,5 @@
   "share": "リンクをコピー",
   "copyConfirmation": "リンクをコピーしました。",
   "copyError": "リンクをコピーできませんでした。",
-  "pluralSentence": "{count, plural, other {リンゴが # 個あります。}}"
+  "pluralSentence": "{exampleOne, plural, other {リンゴが # 個あります。}} {exampleThree, plural, other {リンゴが # 個あります。}} {exampleFive, plural, other {リンゴが # 個あります。}} {count, plural, other {リンゴが # 個あります。}}"
 }

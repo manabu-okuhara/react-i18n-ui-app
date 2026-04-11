@@ -8,5 +8,5 @@
   "share": "نسخ الرابط",
   "copyConfirmation": "تم نسخ الرابط.",
   "copyError": "تعذر نسخ الرابط.",
-  "pluralSentence": "{count, plural, zero {لا توجد تفاحات.} one {هناك تفاحة واحدة.} two {هناك تفاحتان.} few {هناك # تفاحات.} many {هناك # تفاحة.} other {هناك # تفاحة.}}"
+  "pluralSentence": "{exampleOne, plural, zero {لا توجد تفاحات.} one {هناك تفاحة واحدة.} two {هناك تفاحتان.} few {هناك # تفاحات.} many {هناك # تفاحة.} other {هناك # تفاحة.}} {exampleThree, plural, zero {لا توجد تفاحات.} one {هناك تفاحة واحدة.} two {هناك تفاحتان.} few {هناك # تفاحات.} many {هناك # تفاحة.} other {هناك # تفاحة.}} {exampleFive, plural, zero {لا توجد تفاحات.} one {هناك تفاحة واحدة.} two {هناك تفاحتان.} few {هناك # تفاحات.} many {هناك # تفاحة.} other {هناك # تفاحة.}} {count, plural, zero {لا توجد تفاحات.} one {هناك تفاحة واحدة.} two {هناك تفاحتان.} few {هناك # تفاحات.} many {هناك # تفاحة.} other {هناك # تفاحة.}}"
 }

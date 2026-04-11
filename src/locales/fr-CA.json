@@ -8,5 +8,5 @@
   "share": "Copier le lien",
   "copyConfirmation": "Lien copie !",
   "copyError": "Impossible de copier le lien.",
-  "pluralSentence": "{count, plural, one {Il y a # pomme.} other {Il y a # pommes.}}"
+  "pluralSentence": "{exampleOne, plural, one {Il y a # pomme.} other {Il y a # pommes.}} {exampleThree, plural, one {Il y a # pomme.} other {Il y a # pommes.}} {exampleFive, plural, one {Il y a # pomme.} other {Il y a # pommes.}} {count, plural, one {Il y a # pomme.} other {Il y a # pommes.}}"
 }

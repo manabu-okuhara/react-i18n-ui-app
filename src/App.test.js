@@ -36,6 +36,9 @@ test('falls back to en-US messages for an unsupported locale', () => {
 
   expect(screen.getByRole('heading', { name: 'System Dashboard' })).toBeInTheDocument();
   expect(screen.getByLabelText('Please search for or type a locale to update the view:')).toBeInTheDocument();
+  expect(
+    screen.getByText(/There is 1 apple\. There are 3 apples\. There are 5 apples\./)
+  ).toBeInTheDocument();
 });
 
 test('falls back to ja-JP for a language-only Japanese locale', () => {
