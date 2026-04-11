@@ -8,5 +8,5 @@
   "share": "Скопировать ссылку",
   "copyConfirmation": "Ссылка скопирована!",
   "copyError": "Не удалось скопировать ссылку.",
-  "pluralSentence": "{count, plural, one {Здесь # яблоко.} few {Здесь # яблока.} many {Здесь # яблок.} other {Здесь # яблока.}}"
+  "pluralSentence": "{exampleOne, plural, one {Есть # яблоко.} few {Есть # яблока.} many {Есть # яблок.} other {Есть # яблока.}} {exampleThree, plural, one {Есть # яблоко.} few {Есть # яблока.} many {Есть # яблок.} other {Есть # яблока.}} {exampleFive, plural, one {Есть # яблоко.} few {Есть # яблока.} many {Есть # яблок.} other {Есть # яблока.}} {count, plural, one {Здесь # яблоко.} few {Здесь # яблока.} many {Здесь # яблок.} other {Здесь # яблока.}}"
 }
