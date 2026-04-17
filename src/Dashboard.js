@@ -138,16 +138,31 @@ function Dashboard() {
     }
 
     const results = new Set();
+
     try {
       const validated = Intl.getCanonicalLocales(searchTerm)[0];
       results.add(validated);
-      results.add(new Intl.Locale(searchTerm).maximize().toString());
+
+      const resolved = resolveLocale(validated, MESSAGES, customerFallbacks);
+      results.add(resolved);
     } catch {
       return [];
     }
 
     return Array.from(results).slice(0, 5);
-  }, [locale, searchTerm]);
+  }, [locale, searchTerm, customerFallbacks]);
+
+  const submitLocale = (nextLocale) => {
+    const trimmedLocale = nextLocale.trim();
+
+    if (!trimmedLocale) {
+      return;
+    }
+
+    setLocale(trimmedLocale);
+    setSearchTerm(trimmedLocale);
+    setShowDropdown(false);
+  };
 
   const copyLink = async () => {
     try {
@@ -185,6 +200,12 @@ function Dashboard() {
             setSearchTerm(event.target.value);
             setShowDropdown(true);
           }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              submitLocale(searchTerm);
+            }
+          }}
           style={styles.input}
         />
 
@@ -196,9 +217,7 @@ function Dashboard() {
                 style={styles.option}
                 type="button"
                 onClick={() => {
-                  setLocale(code);
-                  setSearchTerm(code);
-                  setShowDropdown(false);
+                  submitLocale(code);
                 }}
               >
                 <strong style={styles.optionCode}>{code}</strong>

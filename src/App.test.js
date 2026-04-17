@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
 
 beforeEach(() => {
@@ -66,3 +66,39 @@ test('applies rtl direction for Arabic', () => {
   expect(dashboard).not.toBeNull();
   expect(screen.getByRole('button', { name: 'نسخ الرابط' })).toBeInTheDocument();
 });
+
+test('accepts Enter for a language-only locale input', () => {
+  render(<App />);
+
+  const input = screen.getByLabelText('Please search for or type a locale to update the view:');
+  fireEvent.change(input, { target: { value: 'ja' } });
+  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+
+  expect(screen.getByRole('heading', { name: 'システムダッシュボード' })).toBeInTheDocument();
+});
+
+test('accepts Enter for an exact locale input', () => {
+  render(<App />);
+
+  const input = screen.getByLabelText('Please search for or type a locale to update the view:');
+  fireEvent.change(input, { target: { value: 'ja-JP' } });
+  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+
+  expect(screen.getByRole('heading', { name: 'システムダッシュボード' })).toBeInTheDocument();
+});
+
+test('clicking a suggested locale still works', () => {
+  render(<App />);
+
+  const input = screen.getByLabelText('Please search for or type a locale to update the view:');
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: 'fr' } });
+
+  const suggestion = screen.getByText('fr').closest('button');
+  expect(suggestion).not.toBeNull();
+
+  fireEvent.click(suggestion);
+
+  expect(screen.getByRole('heading', { name: 'Tableau de bord du systeme' })).toBeInTheDocument();
+});
+
