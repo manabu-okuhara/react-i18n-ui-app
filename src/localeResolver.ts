@@ -1,10 +1,14 @@
 import {
   DEFAULT_LOCALE,
   DEFAULT_LANGUAGE_FALLBACKS,
-  getLanguage
+  getLanguage,
+  type LocaleCode,
+  type LocaleFallbackMap,
 } from './localeConfig';
 
-export function normalizeLocale(locale) {
+export type LocaleMessages = Record<string, unknown>;
+
+export function normalizeLocale(locale?: string): string {
   if (!locale) {
     return '';
   }
@@ -16,7 +20,11 @@ export function normalizeLocale(locale) {
   }
 }
 
-export function resolveLocale(inputLocale, messages, customerFallbacks = {}) {
+export function resolveLocale(
+  inputLocale: string | undefined,
+  messages: LocaleMessages,
+  customerFallbacks: LocaleFallbackMap = {}
+): LocaleCode {
   const normalized = normalizeLocale(inputLocale);
 
   if (!normalized) {
@@ -31,14 +39,13 @@ export function resolveLocale(inputLocale, messages, customerFallbacks = {}) {
   const customerChain = customerFallbacks[language] || [];
   const defaultChain = DEFAULT_LANGUAGE_FALLBACKS[language] || [];
 
-  const candidates = [
+  const candidates: LocaleCode[] = [
     ...customerChain,
     ...defaultChain,
     DEFAULT_LOCALE,
-    'en'
+    'en',
   ];
 
   const resolved = candidates.find((candidate) => messages[candidate]);
   return resolved || DEFAULT_LOCALE;
 }
-
