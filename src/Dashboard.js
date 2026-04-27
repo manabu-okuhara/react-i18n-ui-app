@@ -80,7 +80,10 @@ function Dashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const customerFallbacks = customerLocaleConfig.localeFallbacks || {};
+  const customerFallbacks = useMemo(
+    () => customerLocaleConfig.localeFallbacks || {},
+    []
+  );
   const effectiveLocale = resolveLocale(locale, MESSAGES, customerFallbacks);
   const messages = MESSAGES[effectiveLocale];
 
