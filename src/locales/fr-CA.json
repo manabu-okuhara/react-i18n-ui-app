@@ -1,12 +1,12 @@
 {
   "title": "Tableau de bord du systeme",
-  "chooseLocale": "Veuillez rechercher ou saisir un parametre regional pour mettre a jour l'affichage :",
-  "searchPlaceholder": "ex. de-DE, ja-JP",
+  "chooseLocale": "Veuillez rechercher ou saisir un parametre regional pour mettre a jour l'affichage. Parametres regionaux disponibles : en, en-US, ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU.",
+  "searchPlaceholder": "ex. ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU",
   "dateSentence": "La date et l'heure locales actuelles sont enregistrees comme etant {currentDate}.",
   "countrySentence": "Selon votre selection, le pays ou la region designe est {countryName}.",
   "numberSentence": "La valeur calculee basee sur la date pour cette session est {formattedNumber}.",
   "share": "Copier le lien",
   "copyConfirmation": "Lien copie !",
   "copyError": "Impossible de copier le lien.",
-  "pluralSentence": "{exampleOne, plural, one {Il y a # pomme.} other {Il y a # pommes.}} {exampleThree, plural, one {Il y a # pomme.} other {Il y a # pommes.}} {exampleFive, plural, one {Il y a # pomme.} other {Il y a # pommes.}} {count, plural, one {Il y a # pomme.} other {Il y a # pommes.}}"
+  "pluralSentence": "{exampleOne, plural, one {Il y a # <noun>pomme</noun>.} other {Il y a # <noun>pommes</noun>.}} {exampleThree, plural, one {Il y a # <noun>pomme</noun>.} other {Il y a # <noun>pommes</noun>.}} {exampleFive, plural, one {Il y a # <noun>pomme</noun>.} other {Il y a # <noun>pommes</noun>.}} {count, plural, one {Il y a # <noun>pomme</noun>.} other {Il y a # <noun>pommes</noun>.}}"
 }

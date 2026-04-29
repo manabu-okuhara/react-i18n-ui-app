@@ -25,7 +25,7 @@ test('renders localized dashboard content for a supported locale', () => {
   render(<App />);
 
   expect(screen.getByRole('heading', { name: 'システムダッシュボード' })).toBeInTheDocument();
-  expect(screen.getByLabelText('表示を更新するには、ロケールを検索または入力してください：')).toBeInTheDocument();
+  expect(screen.getByLabelText(/表示を更新するには、ロケールを検索または入力してください。/)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'リンクをコピー' })).toBeInTheDocument();
 });
 
@@ -35,10 +35,12 @@ test('falls back to en-US messages for an unsupported locale', () => {
   render(<App />);
 
   expect(screen.getByRole('heading', { name: 'System Dashboard' })).toBeInTheDocument();
-  expect(screen.getByLabelText('Please search for or type a locale to update the view:')).toBeInTheDocument();
+  expect(screen.getByLabelText(/Please search for or type a locale to update the view\./)).toBeInTheDocument();
   expect(
-    screen.getByText(/There is 1 apple\. There are 3 apples\. There are 5 apples\./)
-  ).toBeInTheDocument();
+  screen.getAllByText((_, element) =>
+    element?.textContent?.includes('There is 1 apple. There are 3 apples. There are 5 apples.') ?? false
+  ).length
+).toBeGreaterThan(0);
 });
 
 test('falls back to ja-JP for a language-only Japanese locale', () => {
@@ -70,7 +72,7 @@ test('applies rtl direction for Arabic', () => {
 test('accepts Enter for a language-only locale input', () => {
   render(<App />);
 
-  const input = screen.getByLabelText('Please search for or type a locale to update the view:');
+  const input = screen.getByLabelText(/Please search for or type a locale to update the view\./);
   fireEvent.change(input, { target: { value: 'ja' } });
   fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
@@ -80,7 +82,7 @@ test('accepts Enter for a language-only locale input', () => {
 test('accepts Enter for an exact locale input', () => {
   render(<App />);
 
-  const input = screen.getByLabelText('Please search for or type a locale to update the view:');
+  const input = screen.getByLabelText(/Please search for or type a locale to update the view\./);
   fireEvent.change(input, { target: { value: 'ja-JP' } });
   fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
@@ -90,7 +92,7 @@ test('accepts Enter for an exact locale input', () => {
 test('clicking a suggested locale still works', () => {
   render(<App />);
 
-  const input = screen.getByLabelText('Please search for or type a locale to update the view:');
+  const input = screen.getByLabelText(/Please search for or type a locale to update the view\./);
   fireEvent.focus(input);
   fireEvent.change(input, { target: { value: 'fr' } });
 
@@ -101,4 +103,3 @@ test('clicking a suggested locale still works', () => {
 
   expect(screen.getByRole('heading', { name: 'Tableau de bord du systeme' })).toBeInTheDocument();
 });
-

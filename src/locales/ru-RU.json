@@ -1,12 +1,12 @@
 {
   "title": "Системная панель управления",
-  "chooseLocale": "Введите или найдите локаль, чтобы обновить представление:",
-  "searchPlaceholder": "например: de-DE, ja-JP",
+  "chooseLocale": "Введите или найдите локаль, чтобы обновить представление. Доступные локали: en, en-US, ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU.",
+  "searchPlaceholder": "например: ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU",
   "dateSentence": "Текущие локальные дата и время: {currentDate}.",
   "countrySentence": "Согласно вашему выбору, указанная страна или регион: {countryName}.",
   "numberSentence": "Вычисленное значение для этой сессии: {formattedNumber}.",
   "share": "Скопировать ссылку",
   "copyConfirmation": "Ссылка скопирована!",
   "copyError": "Не удалось скопировать ссылку.",
-  "pluralSentence": "{exampleOne, plural, one {Есть # яблоко.} few {Есть # яблока.} many {Есть # яблок.} other {Есть # яблока.}} {exampleThree, plural, one {Есть # яблоко.} few {Есть # яблока.} many {Есть # яблок.} other {Есть # яблока.}} {exampleFive, plural, one {Есть # яблоко.} few {Есть # яблока.} many {Есть # яблок.} other {Есть # яблока.}} {count, plural, one {Здесь # яблоко.} few {Здесь # яблока.} many {Здесь # яблок.} other {Здесь # яблока.}}"
+  "pluralSentence": "{exampleOne, plural, one {Есть # <noun>яблоко</noun>.} few {Есть # <noun>яблока</noun>.} many {Есть # <noun>яблок</noun>.} other {Есть # <noun>яблока</noun>.}} {exampleThree, plural, one {Есть # <noun>яблоко</noun>.} few {Есть # <noun>яблока</noun>.} many {Есть # <noun>яблок</noun>.} other {Есть # <noun>яблока</noun>.}} {exampleFive, plural, one {Есть # <noun>яблоко</noun>.} few {Есть # <noun>яблока</noun>.} many {Есть # <noun>яблок</noun>.} other {Есть # <noun>яблока</noun>.}} {count, plural, one {Здесь # <noun>яблоко</noun>.} few {Здесь # <noun>яблока</noun>.} many {Здесь # <noun>яблок</noun>.} other {Здесь # <noun>яблока</noun>.}}"
 }
