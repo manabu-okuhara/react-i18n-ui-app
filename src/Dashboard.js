@@ -9,6 +9,7 @@ import { resolveLocale } from './localeResolver';
 
 
 const RTL_LANGUAGES = ['ar', 'he', 'fa', 'ur', 'ps', 'syr', 'dv'];
+const AVAILABLE_LOCALES = ['en', 'en-US', 'ja', 'ja-JP', 'fr', 'fr-CA', 'ar', 'ar-EG', 'ru', 'ru-RU'];
 
 const MESSAGES = {
   'en-US': enUS,
@@ -55,6 +56,100 @@ function formatMessage(message, values = {}, locale) {
   return withPluralContent.replace(/{(\w+)}/g, (match, key) => (
     values[key] !== undefined ? values[key] : match
   ));
+}
+
+function renderFormattedMessage(message, locale, values = {}) {
+  const formatted = formatMessage(message, values, locale);
+  const highlightedValues = new Set(
+    Object.values(values)
+      .filter((value) => value !== undefined && value !== null)
+      .map((value) => String(value))
+      .filter(Boolean)
+  );
+
+  if (highlightedValues.size === 0) {
+    return formatted;
+  }
+
+  const segments = [];
+  let cursor = 0;
+  let key = 0;
+
+  while (cursor < formatted.length) {
+    let matchValue = '';
+    let matchIndex = -1;
+
+    for (const value of highlightedValues) {
+      const index = formatted.indexOf(value, cursor);
+      if (index === -1) {
+        continue;
+      }
+
+      if (matchIndex === -1 || index < matchIndex || (index === matchIndex && value.length > matchValue.length)) {
+        matchIndex = index;
+        matchValue = value;
+      }
+    }
+
+    if (matchIndex === -1) {
+      segments.push(formatted.slice(cursor));
+      break;
+    }
+
+    if (matchIndex > cursor) {
+      segments.push(formatted.slice(cursor, matchIndex));
+    }
+
+    segments.push(
+      <span key={`value-${key}`} style={styles.valueText}>
+        {matchValue}
+      </span>
+    );
+
+    cursor = matchIndex + matchValue.length;
+    key += 1;
+  }
+
+  return segments;
+}
+
+function renderPluralMessage(message) {
+  if (!message) {
+    return '';
+  }
+
+  const segments = [];
+  const matcher = /<noun>(.*?)<\/noun>|(\p{N}+)/gu;
+  let cursor = 0;
+  let match;
+
+  while ((match = matcher.exec(message)) !== null) {
+    if (match.index > cursor) {
+      segments.push(message.slice(cursor, match.index));
+    }
+
+    if (match[1]) {
+      segments.push(
+        <span key={`noun-${match.index}`} style={styles.pluralNounText}>
+          {match[1]}
+        </span>
+      );
+    } else if (match[2]) {
+      segments.push(
+        <span key={`number-${match.index}`} style={styles.pluralValueText}>
+          {match[2]}
+        </span>
+      );
+    }
+
+    cursor = matcher.lastIndex;
+  }
+
+  if (cursor < message.length) {
+    segments.push(message.slice(cursor));
+  }
+
+  return segments;
 }
 
 function getRegionName(locale) {
@@ -119,19 +214,15 @@ function Dashboard() {
     const count = now.getSeconds() % 10;
 
     return {
-      dateDisplay: formatMessage(messages.dateSentence, { currentDate: dateString }, effectiveLocale),
-      countryDisplay: formatMessage(messages.countrySentence, { countryName: getRegionName(effectiveLocale) }, effectiveLocale),
-      numberDisplay: formatMessage(messages.numberSentence, { formattedNumber: numberString }, effectiveLocale),
-      pluralDisplay: formatMessage(
-        messages.pluralSentence,
-        {
-          exampleOne: 1,
-          exampleThree: 3,
-          exampleFive: 5,
-          count
-        },
-        effectiveLocale
-      )
+      dateDisplay: renderFormattedMessage(messages.dateSentence, effectiveLocale, { currentDate: dateString }),
+      countryDisplay: renderFormattedMessage(messages.countrySentence, effectiveLocale, { countryName: getRegionName(effectiveLocale) }),
+      numberDisplay: renderFormattedMessage(messages.numberSentence, effectiveLocale, { formattedNumber: numberString }),
+      pluralDisplay: formatMessage(messages.pluralSentence, {
+        exampleOne: 1,
+        exampleThree: 3,
+        exampleFive: 5,
+        count
+      }, effectiveLocale)
     };
   }, [effectiveLocale, messages]);
 
@@ -140,20 +231,13 @@ function Dashboard() {
       return [locale];
     }
 
-    const results = new Set();
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const matchingLocales = AVAILABLE_LOCALES.filter((code) =>
+      code.toLowerCase().startsWith(normalizedSearch)
+    );
 
-    try {
-      const validated = Intl.getCanonicalLocales(searchTerm)[0];
-      results.add(validated);
-
-      const resolved = resolveLocale(validated, MESSAGES, customerFallbacks);
-      results.add(resolved);
-    } catch {
-      return [];
-    }
-
-    return Array.from(results).slice(0, 5);
-  }, [locale, searchTerm, customerFallbacks]);
+    return matchingLocales.slice(0, 10);
+  }, [locale, searchTerm]);
 
   const submitLocale = (nextLocale) => {
     const trimmedLocale = nextLocale.trim();
@@ -235,7 +319,7 @@ function Dashboard() {
         <p style={styles.text}>{displayContent.dateDisplay}</p>
         <p style={styles.text}>{displayContent.countryDisplay}</p>
         <p style={styles.text}>{displayContent.numberDisplay}</p>
-        <p style={styles.text}><strong>{displayContent.pluralDisplay}</strong></p>
+        <p style={styles.text}><strong>{renderPluralMessage(displayContent.pluralDisplay)}</strong></p>
       </div>
     </div>
   );
@@ -311,6 +395,16 @@ const styles = {
   optionLabel: {
     fontSize: '14px',
     opacity: 0.7
+  },
+  valueText: {
+    color: '#c62828',
+    fontWeight: 600
+  },
+  pluralNounText: {
+    color: '#c62828'
+  },
+  pluralValueText: {
+    color: '#1565c0'
   },
   result: {
     display: 'grid',

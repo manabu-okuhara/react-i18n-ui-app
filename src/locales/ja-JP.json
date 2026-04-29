@@ -1,12 +1,12 @@
 {
   "title": "システムダッシュボード",
-  "chooseLocale": "表示を更新するには、ロケールを検索または入力してください：",
-  "searchPlaceholder": "例: de-DE, ja-JP",
+  "chooseLocale": "表示を更新するには、ロケールを検索または入力してください。利用可能なロケール: en、en-US、ja、ja-JP、fr、fr-CA、ar、ar-EG、ru、ru-RU。",
+  "searchPlaceholder": "例: ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU",
   "dateSentence": "現在の現地日時は {currentDate} です。",
   "countrySentence": "選択された設定に基づき、対象の国・地域は {countryName} と判定されました。",
   "numberSentence": "このセッションの計算済み日付ベース数値は {formattedNumber} です。",
   "share": "リンクをコピー",
   "copyConfirmation": "リンクをコピーしました。",
   "copyError": "リンクをコピーできませんでした。",
-  "pluralSentence": "{exampleOne, plural, other {リンゴが # 個あります。}} {exampleThree, plural, other {リンゴが # 個あります。}} {exampleFive, plural, other {リンゴが # 個あります。}} {count, plural, other {リンゴが # 個あります。}}"
+  "pluralSentence": "{exampleOne, plural, other {<noun>リンゴ</noun>が # 個あります。}} {exampleThree, plural, other {<noun>リンゴ</noun>が # 個あります。}} {exampleFive, plural, other {<noun>リンゴ</noun>が # 個あります。}} {count, plural, other {<noun>リンゴ</noun>が # 個あります。}}"
 }

@@ -1,12 +1,12 @@
 {
   "title": "لوحة تحكم النظام",
-  "chooseLocale": "يرجى البحث عن أو كتابة الإعدادات المحلية لتحديث العرض:",
-  "searchPlaceholder": "مثال: de-DE, ja-JP",
+  "chooseLocale": "يرجى البحث عن الإعدادات المحلية أو كتابتها لتحديث العرض. الإعدادات المحلية المتاحة: en و en-US و ja و ja-JP و fr و fr-CA و ar و ar-EG و ru و ru-RU.",
+  "searchPlaceholder": "مثال: ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU",
   "dateSentence": "تم تسجيل التاريخ والوقت المحلي الحالي في {currentDate}.",
   "countrySentence": "بناءً على اختيارك، فإن البلد أو المنطقة المحددة هي {countryName}.",
   "numberSentence": "القيمة المحسوبة بناءً على التاريخ لهذه الجلسة هي {formattedNumber}.",
   "share": "نسخ الرابط",
   "copyConfirmation": "تم نسخ الرابط.",
   "copyError": "تعذر نسخ الرابط.",
-  "pluralSentence": "{exampleOne, plural, zero {لا توجد تفاحات.} one {هناك تفاحة واحدة.} two {هناك تفاحتان.} few {هناك # تفاحات.} many {هناك # تفاحة.} other {هناك # تفاحة.}} {exampleThree, plural, zero {لا توجد تفاحات.} one {هناك تفاحة واحدة.} two {هناك تفاحتان.} few {هناك # تفاحات.} many {هناك # تفاحة.} other {هناك # تفاحة.}} {exampleFive, plural, zero {لا توجد تفاحات.} one {هناك تفاحة واحدة.} two {هناك تفاحتان.} few {هناك # تفاحات.} many {هناك # تفاحة.} other {هناك # تفاحة.}} {count, plural, zero {لا توجد تفاحات.} one {هناك تفاحة واحدة.} two {هناك تفاحتان.} few {هناك # تفاحات.} many {هناك # تفاحة.} other {هناك # تفاحة.}}"
+  "pluralSentence": "{exampleOne, plural, zero {لا توجد <noun>تفاحات</noun>.} one {هناك <noun>تفاحة</noun> واحدة.} two {هناك <noun>تفاحتان</noun>.} few {هناك # <noun>تفاحات</noun>.} many {هناك # <noun>تفاحة</noun>.} other {هناك # <noun>تفاحة</noun>.}} {exampleThree, plural, zero {لا توجد <noun>تفاحات</noun>.} one {هناك <noun>تفاحة</noun> واحدة.} two {هناك <noun>تفاحتان</noun>.} few {هناك # <noun>تفاحات</noun>.} many {هناك # <noun>تفاحة</noun>.} other {هناك # <noun>تفاحة</noun>.}} {exampleFive, plural, zero {لا توجد <noun>تفاحات</noun>.} one {هناك <noun>تفاحة</noun> واحدة.} two {هناك <noun>تفاحتان</noun>.} few {هناك # <noun>تفاحات</noun>.} many {هناك # <noun>تفاحة</noun>.} other {هناك # <noun>تفاحة</noun>.}} {count, plural, zero {لا توجد <noun>تفاحات</noun>.} one {هناك <noun>تفاحة</noun> واحدة.} two {هناك <noun>تفاحتان</noun>.} few {هناك # <noun>تفاحات</noun>.} many {هناك # <noun>تفاحة</noun>.} other {هناك # <noun>تفاحة</noun>.}}"
 }

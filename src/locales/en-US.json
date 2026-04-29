@@ -1,14 +1,13 @@
 {
   "title": "System Dashboard",
-  "chooseLocale": "Please search for or type a locale to update the view:",
-  "searchPlaceholder": "e.g. de-DE, ja-JP",
+  "chooseLocale": "Please search for or type a locale to update the view. Available locales: en, en-US, ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU.",
+  "searchPlaceholder": "e.g. ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU",
   "dateSentence": "The current local date and time is recorded as {currentDate}.",
   "countrySentence": "Based on your selection, the designated country or region is {countryName}.",
   "numberSentence": "The calculated date-based value for this session is {formattedNumber}.",
   "share": "Copy Link",
   "copyConfirmation": "Link copied!",
   "copyError": "Unable to copy the link.",
-  "pluralSentence": "{exampleOne, plural, one {There is # apple.} other {There are # apples.}} {exampleThree, plural, one {There is # apple.} other {There are # apples.}} {exampleFive, plural, one {There is # apple.} other {There are # apples.}} {count, plural, one {There is # apple.} other {There are # apples.}}",
+  "pluralSentence": "{exampleOne, plural, one {There is # <noun>apple</noun>.} other {There are # <noun>apples</noun>.}} {exampleThree, plural, one {There is # <noun>apple</noun>.} other {There are # <noun>apples</noun>.}} {exampleFive, plural, one {There is # <noun>apple</noun>.} other {There are # <noun>apples</noun>.}} {count, plural, one {There is # <noun>apple</noun>.} other {There are # <noun>apples</noun>.}}",
   "testDuplicateCheck": "Copy Link"
 }
-
