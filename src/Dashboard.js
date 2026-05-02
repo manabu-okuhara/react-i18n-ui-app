@@ -4,19 +4,20 @@ import jaJP from './locales/ja-JP.json';
 import frCA from './locales/fr-CA.json';
 import arEG from './locales/ar-EG.json';
 import ruRU from './locales/ru-RU.json';
+import trTR from './locales/tr-TR.json';
 import customerLocaleConfig from './customerLocaleConfig.json';
 import { resolveLocale } from './localeResolver';
 
-
 const RTL_LANGUAGES = ['ar', 'he', 'fa', 'ur', 'ps', 'syr', 'dv'];
-const AVAILABLE_LOCALES = ['en', 'en-US', 'ja', 'ja-JP', 'fr', 'fr-CA', 'ar', 'ar-EG', 'ru', 'ru-RU'];
+const AVAILABLE_LOCALES = ['en', 'en-US', 'ja', 'ja-JP', 'fr', 'fr-CA', 'ar', 'ar-EG', 'ru', 'ru-RU', 'tr', 'tr-TR'];
 
 const MESSAGES = {
   'en-US': enUS,
   'ja-JP': jaJP,
   'fr-CA': frCA,
   'ar-EG': arEG,
-  'ru-RU': ruRU
+  'ru-RU': ruRU,
+  'tr-TR': trTR
 };
 
 function getInitialLocale() {
@@ -113,13 +114,41 @@ function renderFormattedMessage(message, locale, values = {}) {
   return segments;
 }
 
+function renderNumberWithSeparatorColors(value) {
+  return value.split('').map((char, index) => {
+    const isSeparator = /[.,٬٫]/u.test(char);
+    return (
+      <span
+        key={`number-${index}`}
+        style={isSeparator ? styles.separatorText : styles.valueText}
+      >
+        {char}
+      </span>
+    );
+  });
+}
+
+function renderValueSentence(message, renderedValue) {
+  const marker = '__VALUE__';
+  const templated = message.replace('{value}', marker);
+  const [before, after] = templated.split(marker);
+
+  return (
+    <>
+      {before}
+      {renderedValue}
+      {after}
+    </>
+  );
+}
+
 function renderPluralMessage(message) {
   if (!message) {
     return '';
   }
 
   const segments = [];
-  const matcher = /<noun>(.*?)<\/noun>|(\p{N}+)/gu;
+  const matcher = /<accent>(.*?)<\/accent>|(\p{N}+)/gu;
   let cursor = 0;
   let match;
 
@@ -130,7 +159,7 @@ function renderPluralMessage(message) {
 
     if (match[1]) {
       segments.push(
-        <span key={`noun-${match.index}`} style={styles.pluralNounText}>
+        <span key={`accent-${match.index}`} style={styles.pluralAccentText}>
           {match[1]}
         </span>
       );
@@ -164,9 +193,41 @@ function getRegionName(locale) {
 
 function getLanguageName(locale) {
   try {
-    return new Intl.DisplayNames(['en'], { type: 'language' }).of(locale.split('-')[0]);
+    const language = locale.split('-')[0];
+    return new Intl.DisplayNames([locale], { type: 'language' }).of(language) || language;
   } catch {
     return locale;
+  }
+}
+
+function getFirstDayOfWeek(locale) {
+  try {
+    const localeInfo = new Intl.Locale(locale);
+    const intlFirstDay =
+      localeInfo.getWeekInfo?.().firstDay ??
+      localeInfo.weekInfo?.firstDay ??
+      7;
+
+    // ICU/ECMA-402: Monday=1 ... Sunday=7
+    // Demo mapping: Sunday=1, Monday=2, ... Saturday=7
+    const firstDayOfWeek = intlFirstDay === 7 ? 1 : intlFirstDay + 1;
+
+    const weekdayDateMap = {
+      1: new Date(Date.UTC(2023, 0, 1, 12)), // Sunday
+      2: new Date(Date.UTC(2023, 0, 2, 12)), // Monday
+      3: new Date(Date.UTC(2023, 0, 3, 12)), // Tuesday
+      4: new Date(Date.UTC(2023, 0, 4, 12)), // Wednesday
+      5: new Date(Date.UTC(2023, 0, 5, 12)), // Thursday
+      6: new Date(Date.UTC(2023, 0, 6, 12)), // Friday
+      7: new Date(Date.UTC(2023, 0, 7, 12))  // Saturday
+    };
+
+    return new Intl.DateTimeFormat(locale, {
+      weekday: 'long',
+      timeZone: 'UTC'
+    }).format(weekdayDateMap[firstDayOfWeek]);
+  } catch {
+    return '';
   }
 }
 
@@ -202,29 +263,57 @@ function Dashboard() {
       hour: '2-digit',
       minute: '2-digit'
     });
+
+    const year = now.getFullYear() % 100;
     const rawValue =
       (now.getMonth() + 1) * 10000 +
       now.getDate() * 100 +
-      (now.getFullYear() % 100) +
-      (now.getFullYear() % 100 / 100);
+      Math.floor(year / 10) * 10 +
+      year / 100;
+
     const numberString = new Intl.NumberFormat(effectiveLocale, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(rawValue);
+
+    const percentString = new Intl.NumberFormat(effectiveLocale, {
+      style: 'percent',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(0.8);
+
+    const firstDayOfWeek = getFirstDayOfWeek(effectiveLocale);
     const count = now.getSeconds() % 10;
+    const languageName = getLanguageName(effectiveLocale);
+    const regionName = getRegionName(effectiveLocale);
 
     return {
+      inputLocaleDisplay: renderFormattedMessage(messages.inputLocaleSentence, effectiveLocale, { inputLocale: locale }),
+      languageDisplay: renderFormattedMessage(messages.languageSentence, effectiveLocale, { languageName }),
+      regionDisplay: renderFormattedMessage(messages.regionSentence, effectiveLocale, { regionName }),
       dateDisplay: renderFormattedMessage(messages.dateSentence, effectiveLocale, { currentDate: dateString }),
-      countryDisplay: renderFormattedMessage(messages.countrySentence, effectiveLocale, { countryName: getRegionName(effectiveLocale) }),
-      numberDisplay: renderFormattedMessage(messages.numberSentence, effectiveLocale, { formattedNumber: numberString }),
-      pluralDisplay: formatMessage(messages.pluralSentence, {
-        exampleOne: 1,
-        exampleThree: 3,
-        exampleFive: 5,
-        count
-      }, effectiveLocale)
+      numberDisplay: renderValueSentence(
+        messages.numberSentence,
+        renderNumberWithSeparatorColors(numberString)
+      ),
+      percentDisplay: renderFormattedMessage(messages.percentSentence, effectiveLocale, { percentValue: percentString }),
+      firstDayOfWeekDisplay: renderFormattedMessage(
+        messages.firstDayOfWeekSentence,
+        effectiveLocale,
+        { firstDayOfWeek }
+      ),
+      pluralDisplay: formatMessage(
+        messages.pluralSentence,
+        {
+          exampleOne: 1,
+          exampleThree: 3,
+          exampleFive: 5,
+          count
+        },
+        effectiveLocale
+      )
     };
-  }, [effectiveLocale, messages]);
+  }, [effectiveLocale, locale, messages]);
 
   const suggestions = useMemo(() => {
     if (!searchTerm) {
@@ -236,7 +325,7 @@ function Dashboard() {
       code.toLowerCase().startsWith(normalizedSearch)
     );
 
-    return matchingLocales.slice(0, 10);
+    return matchingLocales.slice(0, 12);
   }, [locale, searchTerm]);
 
   const submitLocale = (nextLocale) => {
@@ -316,10 +405,16 @@ function Dashboard() {
       </div>
 
       <div style={styles.result}>
+        <p style={styles.text}>{displayContent.inputLocaleDisplay}</p>
+        <p style={styles.text}>{displayContent.languageDisplay}</p>
+        <p style={styles.text}>{displayContent.regionDisplay}</p>
         <p style={styles.text}>{displayContent.dateDisplay}</p>
-        <p style={styles.text}>{displayContent.countryDisplay}</p>
         <p style={styles.text}>{displayContent.numberDisplay}</p>
-        <p style={styles.text}><strong>{renderPluralMessage(displayContent.pluralDisplay)}</strong></p>
+        <p style={styles.text}>{displayContent.percentDisplay}</p>
+        <p style={styles.text}>{displayContent.firstDayOfWeekDisplay}</p>
+        <p style={{ ...styles.text, ...styles.pluralBlock }}>
+          {renderPluralMessage(displayContent.pluralDisplay)}
+        </p>
       </div>
     </div>
   );
@@ -369,7 +464,8 @@ const styles = {
     outline: 'none',
     color: 'black',
     textAlign: 'inherit',
-    direction: 'inherit'
+    direction: 'inherit',
+    fontSize: '14px'
   },
   dropdown: {
     display: 'grid',
@@ -390,21 +486,29 @@ const styles = {
     textAlign: 'inherit'
   },
   optionCode: {
-    color: 'black'
+    color: 'black',
+    fontSize: '14px'
   },
   optionLabel: {
-    fontSize: '14px',
+    fontSize: '12px',
     opacity: 0.7
   },
   valueText: {
     color: '#c62828',
     fontWeight: 600
   },
-  pluralNounText: {
+  separatorText: {
+    color: '#1565c0',
+    fontWeight: 600
+  },
+  pluralAccentText: {
     color: '#c62828'
   },
   pluralValueText: {
     color: '#1565c0'
+  },
+  pluralBlock: {
+    whiteSpace: 'pre-line'
   },
   result: {
     display: 'grid',
@@ -413,14 +517,17 @@ const styles = {
   text: {
     color: 'black',
     margin: 0,
-    lineHeight: 1.5
+    lineHeight: 1.5,
+    fontSize: '14px'
   },
   label: {
     display: 'block',
     marginBottom: '8px',
     fontWeight: 'bold',
-    textAlign: 'inherit'
+    textAlign: 'inherit',
+    fontSize: '14px'
   }
 };
 
 export default Dashboard;
+

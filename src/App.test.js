@@ -25,7 +25,13 @@ test('renders localized dashboard content for a supported locale', () => {
   render(<App />);
 
   expect(screen.getByRole('heading', { name: 'システムダッシュボード' })).toBeInTheDocument();
-  expect(screen.getByLabelText(/表示を更新するには、ロケールを検索または入力してください。/)).toBeInTheDocument();
+  expect(screen.getByLabelText(/ロケール.*入力してください/)).toBeInTheDocument();
+  expect(screen.getByText(/入力ロケール:/)).toBeInTheDocument();
+  expect(screen.getByText(/言語:/)).toBeInTheDocument();
+  expect(screen.getByText(/地域:/)).toBeInTheDocument();
+  expect(screen.getByText(/日付 \/ 時刻:/)).toBeInTheDocument();
+  expect(screen.getByText(/パーセント値:/)).toBeInTheDocument();
+  expect(screen.getByText(/週の最初の曜日:/)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'リンクをコピー' })).toBeInTheDocument();
 });
 
@@ -35,12 +41,24 @@ test('falls back to en-US messages for an unsupported locale', () => {
   render(<App />);
 
   expect(screen.getByRole('heading', { name: 'System Dashboard' })).toBeInTheDocument();
-  expect(screen.getByLabelText(/Please search for or type a locale to update the view\./)).toBeInTheDocument();
+  expect(screen.getByLabelText(/Enter Locale to display locale based values:/)).toBeInTheDocument();
+  expect(screen.getByText(/Input Locale:/)).toBeInTheDocument();
+  expect(screen.getByText(/Language:/)).toBeInTheDocument();
+  expect(screen.getByText(/Region:/)).toBeInTheDocument();
+  expect(screen.getByText(/Date \/ Time:/)).toBeInTheDocument();
+  expect(screen.getByText(/Percent Value:/)).toBeInTheDocument();
+  expect(screen.getByText(/First Day of Week:/)).toBeInTheDocument();
+  expect(screen.getByText(/Plurals with ICU Message Format:/)).toBeInTheDocument();
   expect(
-  screen.getAllByText((_, element) =>
-    element?.textContent?.includes('There is 1 apple. There are 3 apples. There are 5 apples.') ?? false
-  ).length
-).toBeGreaterThan(0);
+    screen.getAllByText((_, element) =>
+      element?.textContent?.includes('There is 1 apple.') ?? false
+    ).length
+  ).toBeGreaterThan(0);
+  expect(
+    screen.getAllByText((_, element) =>
+      element?.textContent?.includes('The calculated date-based number:') ?? false
+    ).length
+  ).toBeGreaterThan(0);
 });
 
 test('falls back to ja-JP for a language-only Japanese locale', () => {
@@ -59,6 +77,14 @@ test('falls back to fr-CA for a language-only French locale', () => {
   expect(screen.getByRole('heading', { name: 'Tableau de bord du systeme' })).toBeInTheDocument();
 });
 
+test('falls back to tr-TR for a language-only Turkish locale', () => {
+  window.history.replaceState({}, '', '/?hl=tr');
+
+  render(<App />);
+
+  expect(screen.getByRole('heading', { name: 'Sistem Panosu' })).toBeInTheDocument();
+});
+
 test('applies rtl direction for Arabic', () => {
   window.history.replaceState({}, '', '/?hl=ar-EG');
 
@@ -72,7 +98,7 @@ test('applies rtl direction for Arabic', () => {
 test('accepts Enter for a language-only locale input', () => {
   render(<App />);
 
-  const input = screen.getByLabelText(/Please search for or type a locale to update the view\./);
+  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
   fireEvent.change(input, { target: { value: 'ja' } });
   fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
@@ -82,7 +108,7 @@ test('accepts Enter for a language-only locale input', () => {
 test('accepts Enter for an exact locale input', () => {
   render(<App />);
 
-  const input = screen.getByLabelText(/Please search for or type a locale to update the view\./);
+  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
   fireEvent.change(input, { target: { value: 'ja-JP' } });
   fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
 
@@ -92,7 +118,7 @@ test('accepts Enter for an exact locale input', () => {
 test('clicking a suggested locale still works', () => {
   render(<App />);
 
-  const input = screen.getByLabelText(/Please search for or type a locale to update the view\./);
+  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
   fireEvent.focus(input);
   fireEvent.change(input, { target: { value: 'fr' } });
 
@@ -103,3 +129,4 @@ test('clicking a suggested locale still works', () => {
 
   expect(screen.getByRole('heading', { name: 'Tableau de bord du systeme' })).toBeInTheDocument();
 });
+

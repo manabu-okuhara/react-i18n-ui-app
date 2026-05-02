@@ -1,12 +1,17 @@
 {
   "title": "Tableau de bord du systeme",
-  "chooseLocale": "Veuillez rechercher ou saisir un parametre regional pour mettre a jour l'affichage. Parametres regionaux disponibles : en, en-US, ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU.",
-  "searchPlaceholder": "ex. ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU",
-  "dateSentence": "La date et l'heure locales actuelles sont enregistrees comme etant {currentDate}.",
-  "countrySentence": "Selon votre selection, le pays ou la region designe est {countryName}.",
-  "numberSentence": "La valeur calculee basee sur la date pour cette session est {formattedNumber}.",
+  "chooseLocale": "Entrez une locale pour afficher des valeurs basees sur la locale :",
+  "searchPlaceholder": "ex. fr, fr-CA, tr, tr-TR, en, en-US",
+  "inputLocaleSentence": "Locale saisie : {inputLocale}",
+  "languageSentence": "Langue : {languageName}",
+  "regionSentence": "Region : {regionName}",
+  "dateSentence": "Date / heure : {currentDate}",
+  "numberSentence": "Nombre calcule base sur la date : {value}",
+  "percentSentence": "Valeur en pourcentage : {percentValue}",
+  "firstDayOfWeekSentence": "Premier jour de la semaine : {firstDayOfWeek}",
   "share": "Copier le lien",
   "copyConfirmation": "Lien copie !",
   "copyError": "Impossible de copier le lien.",
-  "pluralSentence": "{exampleOne, plural, one {Il y a # <noun>pomme</noun>.} other {Il y a # <noun>pommes</noun>.}} {exampleThree, plural, one {Il y a # <noun>pomme</noun>.} other {Il y a # <noun>pommes</noun>.}} {exampleFive, plural, one {Il y a # <noun>pomme</noun>.} other {Il y a # <noun>pommes</noun>.}} {count, plural, one {Il y a # <noun>pomme</noun>.} other {Il y a # <noun>pommes</noun>.}}"
+  "pluralSentence": "Pluriels avec le format de message ICU :\n{exampleOne, plural, one {Il y a # <accent>pomme</accent>.} other {Il y a # <accent>pommes</accent>.}}\n{exampleThree, plural, one {Il y a # <accent>pomme</accent>.} other {Il y a # <accent>pommes</accent>.}}\n{exampleFive, plural, one {Il y a # <accent>pomme</accent>.} other {Il y a # <accent>pommes</accent>.}}\n{count, plural, one {Il y a # <accent>pomme</accent>.} other {Il y a # <accent>pommes</accent>.}}"
 }
+
