@@ -1,13 +1,17 @@
 {
   "title": "System Dashboard",
-  "chooseLocale": "Please search for or type a locale to update the view. Available locales: en, en-US, ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU.",
-  "searchPlaceholder": "e.g. ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU",
-  "dateSentence": "The current local date and time is recorded as {currentDate}.",
-  "countrySentence": "Based on your selection, the designated country or region is {countryName}.",
-  "numberSentence": "The calculated date-based value for this session is {formattedNumber}.",
+  "chooseLocale": "Enter Locale to display locale based values:",
+  "searchPlaceholder": "e.g. en, en-US, ja, ja-JP, tr, tr-TR",
+  "inputLocaleSentence": "Input Locale: {inputLocale}",
+  "languageSentence": "Language: {languageName}",
+  "regionSentence": "Region: {regionName}",
+  "dateSentence": "Date / Time: {currentDate}",
+  "numberSentence": "The calculated date-based number: {value}",
+  "percentSentence": "Percent Value: {percentValue}",
+  "firstDayOfWeekSentence": "First Day of Week: {firstDayOfWeek}",
   "share": "Copy Link",
   "copyConfirmation": "Link copied!",
   "copyError": "Unable to copy the link.",
-  "pluralSentence": "{exampleOne, plural, one {There is # <noun>apple</noun>.} other {There are # <noun>apples</noun>.}} {exampleThree, plural, one {There is # <noun>apple</noun>.} other {There are # <noun>apples</noun>.}} {exampleFive, plural, one {There is # <noun>apple</noun>.} other {There are # <noun>apples</noun>.}} {count, plural, one {There is # <noun>apple</noun>.} other {There are # <noun>apples</noun>.}}",
-  "testDuplicateCheck": "Copy Link"
+  "pluralSentence": "Plurals with ICU Message Format:\n{exampleOne, plural, one {There is # <accent>apple</accent>.} other {There are # <accent>apples</accent>.}}\n{exampleThree, plural, one {There is # <accent>apple</accent>.} other {There are # <accent>apples</accent>.}}\n{exampleFive, plural, one {There is # <accent>apple</accent>.} other {There are # <accent>apples</accent>.}}\n{count, plural, one {There is # <accent>apple</accent>.} other {There are # <accent>apples</accent>.}}"
 }
+

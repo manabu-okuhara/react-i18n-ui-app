@@ -7,7 +7,8 @@ export const DEFAULT_LANGUAGE_FALLBACKS: LocaleFallbackMap = {
   ja: ['ja-JP', 'en-JP', 'en-US', 'en'],
   fr: ['fr-FR', 'fr-CA', 'en-FR', 'en-US', 'en'],
   ar: ['ar-EG', 'en-EG', 'en-US', 'en'],
-  ru: ['ru-RU', 'en-RU', 'en-US', 'en']
+  ru: ['ru-RU', 'en-RU', 'en-US', 'en'],
+  tr: ['tr-TR', 'en-TR', 'en-US', 'en']
 };
 
 export function getLanguage(locale: LocaleCode): string {

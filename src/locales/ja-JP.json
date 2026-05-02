@@ -1,12 +1,17 @@
 {
   "title": "システムダッシュボード",
-  "chooseLocale": "表示を更新するには、ロケールを検索または入力してください。利用可能なロケール: en、en-US、ja、ja-JP、fr、fr-CA、ar、ar-EG、ru、ru-RU。",
-  "searchPlaceholder": "例: ja, ja-JP, fr, fr-CA, ar, ar-EG, ru, ru-RU",
-  "dateSentence": "現在の現地日時は {currentDate} です。",
-  "countrySentence": "選択された設定に基づき、対象の国・地域は {countryName} と判定されました。",
-  "numberSentence": "このセッションの計算済み日付ベース数値は {formattedNumber} です。",
+  "chooseLocale": "ロケールに基づく値を表示するため、ロケールを入力してください:",
+  "searchPlaceholder": "例: ja, ja-JP, tr, tr-TR, en, en-US",
+  "inputLocaleSentence": "入力ロケール: {inputLocale}",
+  "languageSentence": "言語: {languageName}",
+  "regionSentence": "地域: {regionName}",
+  "dateSentence": "日付 / 時刻: {currentDate}",
+  "numberSentence": "計算された日付ベースの数値: {value}",
+  "percentSentence": "パーセント値: {percentValue}",
+  "firstDayOfWeekSentence": "週の最初の曜日: {firstDayOfWeek}",
   "share": "リンクをコピー",
   "copyConfirmation": "リンクをコピーしました。",
   "copyError": "リンクをコピーできませんでした。",
-  "pluralSentence": "{exampleOne, plural, other {<noun>リンゴ</noun>が # 個あります。}} {exampleThree, plural, other {<noun>リンゴ</noun>が # 個あります。}} {exampleFive, plural, other {<noun>リンゴ</noun>が # 個あります。}} {count, plural, other {<noun>リンゴ</noun>が # 個あります。}}"
+  "pluralSentence": "ICUメッセージ形式の複数形:\n{exampleOne, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{exampleThree, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{exampleFive, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{count, plural, other {# <accent>個</accent>のリンゴがあります。}}"
 }
+
