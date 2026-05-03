@@ -1,62 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import enUS from './locales/en-US.json';
-import jaJP from './locales/ja-JP.json';
-import frCA from './locales/fr-CA.json';
-import arEG from './locales/ar-EG.json';
-import ruRU from './locales/ru-RU.json';
-import trTR from './locales/tr-TR.json';
 import customerLocaleConfig from './customerLocaleConfig.json';
-import { resolveLocale } from './localeResolver';
-
-const RTL_LANGUAGES = ['ar', 'he', 'fa', 'ur', 'ps', 'syr', 'dv'];
-const AVAILABLE_LOCALES = ['en', 'en-US', 'ja', 'ja-JP', 'fr', 'fr-CA', 'ar', 'ar-EG', 'ru', 'ru-RU', 'tr', 'tr-TR'];
-
-const MESSAGES = {
-  'en-US': enUS,
-  'ja-JP': jaJP,
-  'fr-CA': frCA,
-  'ar-EG': arEG,
-  'ru-RU': ruRU,
-  'tr-TR': trTR
-};
+import {
+  AVAILABLE_LOCALES,
+  BASE_MESSAGES,
+  formatMessage,
+} from './translateLocaleBundle';
+import { requestLocaleBundle } from './localeBundleClient';
 
 function getInitialLocale() {
   const params = new URLSearchParams(window.location.search);
   return params.get('hl') || (navigator.languages ? navigator.languages[0] : navigator.language);
 }
 
-function formatPluralBlocks(message, locale, values) {
-  return message.replace(
-    /\{(\w+),\s*plural,\s*((?:\w+\s*{.+?}\s*)+)\}/g,
-    (_match, variableName, rulesString) => {
-      const count = values[variableName];
-      const rule = new Intl.PluralRules(locale).select(count);
-      const parts = rulesString.match(/(\w+)\s*{(.+?)}/g) || [];
-      const ruleMap = {};
-
-      parts.forEach((part) => {
-        const match = part.match(/(\w+)\s*{(.+?)}/);
-        if (match) {
-          ruleMap[match[1]] = match[2];
-        }
-      });
-
-      const localizedPattern = ruleMap[rule] || ruleMap.other || '';
-      return localizedPattern.replace('#', new Intl.NumberFormat(locale).format(count));
-    }
-  );
-}
-
-function formatMessage(message, values = {}, locale) {
-  if (!message) {
-    return '';
+function getLanguageName(locale) {
+  try {
+    const language = locale.split('-')[0];
+    return new Intl.DisplayNames(['en-US'], { type: 'language' }).of(language) || language;
+  } catch {
+    return locale;
   }
-
-  const withPluralContent = formatPluralBlocks(message, locale, values);
-
-  return withPluralContent.replace(/{(\w+)}/g, (match, key) => (
-    values[key] !== undefined ? values[key] : match
-  ));
 }
 
 function renderFormattedMessage(message, locale, values = {}) {
@@ -181,67 +143,20 @@ function renderPluralMessage(message) {
   return segments;
 }
 
-function getRegionName(locale) {
-  try {
-    const region = new Intl.Locale(locale).maximize().region;
-    const displayNames = new Intl.DisplayNames([locale], { type: 'region' });
-    return displayNames.of(region) || region;
-  } catch {
-    return 'N/A';
-  }
-}
-
-function getLanguageName(locale) {
-  try {
-    const language = locale.split('-')[0];
-    return new Intl.DisplayNames([locale], { type: 'language' }).of(language) || language;
-  } catch {
-    return locale;
-  }
-}
-
-function getFirstDayOfWeek(locale) {
-  try {
-    const localeInfo = new Intl.Locale(locale);
-    const intlFirstDay =
-      localeInfo.getWeekInfo?.().firstDay ??
-      localeInfo.weekInfo?.firstDay ??
-      7;
-
-    // ICU/ECMA-402: Monday=1 ... Sunday=7
-    // Demo mapping: Sunday=1, Monday=2, ... Saturday=7
-    const firstDayOfWeek = intlFirstDay === 7 ? 1 : intlFirstDay + 1;
-
-    const weekdayDateMap = {
-      1: new Date(Date.UTC(2023, 0, 1, 12)), // Sunday
-      2: new Date(Date.UTC(2023, 0, 2, 12)), // Monday
-      3: new Date(Date.UTC(2023, 0, 3, 12)), // Tuesday
-      4: new Date(Date.UTC(2023, 0, 4, 12)), // Wednesday
-      5: new Date(Date.UTC(2023, 0, 5, 12)), // Thursday
-      6: new Date(Date.UTC(2023, 0, 6, 12)), // Friday
-      7: new Date(Date.UTC(2023, 0, 7, 12))  // Saturday
-    };
-
-    return new Intl.DateTimeFormat(locale, {
-      weekday: 'long',
-      timeZone: 'UTC'
-    }).format(weekdayDateMap[firstDayOfWeek]);
-  } catch {
-    return '';
-  }
-}
-
 function Dashboard() {
-  const [locale, setLocale] = useState(getInitialLocale());
-  const [searchTerm, setSearchTerm] = useState('');
+  const initialLocale = useMemo(() => getInitialLocale(), []);
+  const [locale, setLocale] = useState(initialLocale);
+  const [searchTerm, setSearchTerm] = useState(initialLocale);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [preparedBundle, setPreparedBundle] = useState(null);
+  const [isPreparing, setIsPreparing] = useState(false);
 
   const customerFallbacks = useMemo(
     () => customerLocaleConfig.localeFallbacks || {},
     []
   );
-  const effectiveLocale = resolveLocale(locale, MESSAGES, customerFallbacks);
-  const messages = MESSAGES[effectiveLocale];
+  const activeMessages = preparedBundle?.messages || BASE_MESSAGES;
+  const isRTL = preparedBundle?.isRTL || false;
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -249,86 +164,19 @@ function Dashboard() {
     window.history.replaceState({}, '', url);
   }, [locale]);
 
-  const isRTL = useMemo(() => {
-    const language = effectiveLocale.split('-')[0].toLowerCase();
-    return RTL_LANGUAGES.includes(language);
-  }, [effectiveLocale]);
-
-  const displayContent = useMemo(() => {
-    const now = new Date();
-    const dateString = now.toLocaleString(effectiveLocale, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
-    const year = now.getFullYear() % 100;
-    const rawValue =
-      (now.getMonth() + 1) * 10000 +
-      now.getDate() * 100 +
-      Math.floor(year / 10) * 10 +
-      year / 100;
-
-    const numberString = new Intl.NumberFormat(effectiveLocale, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(rawValue);
-
-    const percentString = new Intl.NumberFormat(effectiveLocale, {
-      style: 'percent',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(0.8);
-
-    const firstDayOfWeek = getFirstDayOfWeek(effectiveLocale);
-    const count = now.getSeconds() % 10;
-    const languageName = getLanguageName(effectiveLocale);
-    const regionName = getRegionName(effectiveLocale);
-
-    return {
-      inputLocaleDisplay: renderFormattedMessage(messages.inputLocaleSentence, effectiveLocale, { inputLocale: locale }),
-      languageDisplay: renderFormattedMessage(messages.languageSentence, effectiveLocale, { languageName }),
-      regionDisplay: renderFormattedMessage(messages.regionSentence, effectiveLocale, { regionName }),
-      dateDisplay: renderFormattedMessage(messages.dateSentence, effectiveLocale, { currentDate: dateString }),
-      numberDisplay: renderValueSentence(
-        messages.numberSentence,
-        renderNumberWithSeparatorColors(numberString)
-      ),
-      percentDisplay: renderFormattedMessage(messages.percentSentence, effectiveLocale, { percentValue: percentString }),
-      firstDayOfWeekDisplay: renderFormattedMessage(
-        messages.firstDayOfWeekSentence,
-        effectiveLocale,
-        { firstDayOfWeek }
-      ),
-      pluralDisplay: formatMessage(
-        messages.pluralSentence,
-        {
-          exampleOne: 1,
-          exampleThree: 3,
-          exampleFive: 5,
-          count
-        },
-        effectiveLocale
-      )
-    };
-  }, [effectiveLocale, locale, messages]);
-
   const suggestions = useMemo(() => {
-    if (!searchTerm) {
-      return [locale];
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return AVAILABLE_LOCALES;
     }
 
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-    const matchingLocales = AVAILABLE_LOCALES.filter((code) =>
+    return AVAILABLE_LOCALES.filter((code) =>
       code.toLowerCase().startsWith(normalizedSearch)
-    );
+    ).slice(0, 12);
+  }, [searchTerm]);
 
-    return matchingLocales.slice(0, 12);
-  }, [locale, searchTerm]);
-
-  const submitLocale = (nextLocale) => {
+  const submitLocale = async (nextLocale) => {
     const trimmedLocale = nextLocale.trim();
 
     if (!trimmedLocale) {
@@ -338,16 +186,54 @@ function Dashboard() {
     setLocale(trimmedLocale);
     setSearchTerm(trimmedLocale);
     setShowDropdown(false);
+    setIsPreparing(true);
+
+    try {
+      const bundle = await requestLocaleBundle(trimmedLocale, customerFallbacks);
+      setPreparedBundle(bundle);
+    } finally {
+      setIsPreparing(false);
+    }
   };
 
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      window.alert(messages.copyConfirmation);
+      window.alert(activeMessages.copyConfirmation);
     } catch {
-      window.alert(messages.copyError);
+      window.alert(activeMessages.copyError);
     }
   };
+
+  const displayContent = preparedBundle
+    ? {
+        inputLocaleDisplay: renderFormattedMessage(preparedBundle.messages.inputLocaleSentence, preparedBundle.formattingLocale, {
+          inputLocale: preparedBundle.inputLocale
+        }),
+        languageDisplay: renderFormattedMessage(preparedBundle.messages.languageSentence, preparedBundle.formattingLocale, {
+          languageName: preparedBundle.values.languageName
+        }),
+        regionDisplay: renderFormattedMessage(preparedBundle.messages.regionSentence, preparedBundle.formattingLocale, {
+          regionName: preparedBundle.values.regionName
+        }),
+        dateDisplay: renderFormattedMessage(preparedBundle.messages.dateSentence, preparedBundle.formattingLocale, {
+          currentDate: preparedBundle.values.currentDate
+        }),
+        numberDisplay: renderValueSentence(
+          preparedBundle.messages.numberSentence,
+          renderNumberWithSeparatorColors(preparedBundle.values.formattedNumber)
+        ),
+        percentDisplay: renderFormattedMessage(preparedBundle.messages.percentSentence, preparedBundle.formattingLocale, {
+          percentValue: preparedBundle.values.percentValue
+        }),
+        firstDayOfWeekDisplay: renderFormattedMessage(
+          preparedBundle.messages.firstDayOfWeekSentence,
+          preparedBundle.formattingLocale,
+          { firstDayOfWeek: preparedBundle.values.firstDayOfWeek }
+        ),
+        pluralDisplay: preparedBundle.values.pluralMessage
+      }
+    : null;
 
   return (
     <div
@@ -358,18 +244,18 @@ function Dashboard() {
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <div style={styles.topBar}>
-        <h1 style={styles.header}>{messages.title}</h1>
+        <h1 style={styles.header}>{activeMessages.title}</h1>
         <button onClick={copyLink} style={styles.shareBtn} type="button">
-          {messages.share}
+          {activeMessages.share}
         </button>
       </div>
 
       <div style={styles.searchContainer}>
-        <label htmlFor="locale-input" style={styles.label}>{messages.chooseLocale}</label>
+        <label htmlFor="locale-input" style={styles.label}>{activeMessages.chooseLocale}</label>
         <input
           id="locale-input"
           type="text"
-          placeholder={messages.searchPlaceholder}
+          placeholder={activeMessages.searchPlaceholder}
           value={searchTerm}
           onFocus={() => setShowDropdown(true)}
           onChange={(event) => {
@@ -393,7 +279,8 @@ function Dashboard() {
                 style={styles.option}
                 type="button"
                 onClick={() => {
-                  submitLocale(code);
+                  setSearchTerm(code);
+                  setShowDropdown(false);
                 }}
               >
                 <strong style={styles.optionCode}>{code}</strong>
@@ -404,18 +291,24 @@ function Dashboard() {
         )}
       </div>
 
-      <div style={styles.result}>
-        <p style={styles.text}>{displayContent.inputLocaleDisplay}</p>
-        <p style={styles.text}>{displayContent.languageDisplay}</p>
-        <p style={styles.text}>{displayContent.regionDisplay}</p>
-        <p style={styles.text}>{displayContent.dateDisplay}</p>
-        <p style={styles.text}>{displayContent.numberDisplay}</p>
-        <p style={styles.text}>{displayContent.percentDisplay}</p>
-        <p style={styles.text}>{displayContent.firstDayOfWeekDisplay}</p>
-        <p style={{ ...styles.text, ...styles.pluralBlock }}>
-          {renderPluralMessage(displayContent.pluralDisplay)}
-        </p>
-      </div>
+      {isPreparing && (
+        <p style={styles.text}>Preparing locale bundle...</p>
+      )}
+
+      {displayContent && (
+        <div style={styles.result}>
+          <p style={styles.text}>{displayContent.inputLocaleDisplay}</p>
+          <p style={styles.text}>{displayContent.languageDisplay}</p>
+          <p style={styles.text}>{displayContent.regionDisplay}</p>
+          <p style={styles.text}>{displayContent.dateDisplay}</p>
+          <p style={styles.text}>{displayContent.numberDisplay}</p>
+          <p style={styles.text}>{displayContent.percentDisplay}</p>
+          <p style={styles.text}>{displayContent.firstDayOfWeekDisplay}</p>
+          <p style={{ ...styles.text, ...styles.pluralBlock }}>
+            {renderPluralMessage(displayContent.pluralDisplay)}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -530,4 +423,3 @@ const styles = {
 };
 
 export default Dashboard;
-
