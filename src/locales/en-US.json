@@ -1,17 +1,18 @@
 {
-  "title": "System Dashboard",
+  "title": "Internationalization Demo App using React JavaScript / TypeScript on Node.js tooling",
   "chooseLocale": "Enter Locale to display locale based values:",
   "searchPlaceholder": "e.g. en, en-US, ja, ja-JP, tr, tr-TR",
-  "inputLocaleSentence": "Input Locale: {inputLocale}",
+  "inputLocaleSentence": "Locale Used: {inputLocale}",
   "languageSentence": "Language: {languageName}",
   "regionSentence": "Region: {regionName}",
+  "icuSectionTitle": "ICU Library based values",
   "dateSentence": "Date / Time: {currentDate}",
-  "numberSentence": "The calculated date-based number: {value}",
+  "numberSentence": "Number (Today's date of {todayDate}): {value}",
   "percentSentence": "Percent Value: {percentValue}",
   "firstDayOfWeekSentence": "First Day of Week: {firstDayOfWeek}",
+  "invalidLocaleMessage": "The locale \"{inputLocale}\" is not a valid locale tag. Showing fallback values for {fallbackLocale}.",
   "share": "Copy Link",
   "copyConfirmation": "Link copied!",
   "copyError": "Unable to copy the link.",
-  "pluralSentence": "Plurals with ICU Message Format:\n{exampleOne, plural, one {There is # <accent>apple</accent>.} other {There are # <accent>apples</accent>.}}\n{exampleThree, plural, one {There is # <accent>apple</accent>.} other {There are # <accent>apples</accent>.}}\n{exampleFive, plural, one {There is # <accent>apple</accent>.} other {There are # <accent>apples</accent>.}}\n{count, plural, one {There is # <accent>apple</accent>.} other {There are # <accent>apples</accent>.}}"
+  "pluralSentence": "Plurals (ICU Message Format):\n{exampleOne, plural, one {There is # <accent>apple</accent>.} other {There are # <accent>apples</accent>.}}\n{exampleThree, plural, one {There is # <accent>apple</accent>.} other {There are # <accent>apples</accent>.}}\n{exampleFive, plural, one {There is # <accent>apple</accent>.} other {There are # <accent>apples</accent>.}}\n{count, plural, one {There is # <accent>apple</accent>.} other {There are # <accent>apples</accent>.}}"
 }
-

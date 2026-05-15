@@ -1,17 +1,18 @@
 {
-  "title": "システムダッシュボード",
+  "title": "Node.js ツール上の React JavaScript / TypeScript による国際化デモアプリ",
   "chooseLocale": "ロケールに基づく値を表示するため、ロケールを入力してください:",
   "searchPlaceholder": "例: ja, ja-JP, tr, tr-TR, en, en-US",
-  "inputLocaleSentence": "入力ロケール: {inputLocale}",
+  "inputLocaleSentence": "使用ロケール: {inputLocale}",
   "languageSentence": "言語: {languageName}",
   "regionSentence": "地域: {regionName}",
+  "icuSectionTitle": "ICU ライブラリに基づく値",
   "dateSentence": "日付 / 時刻: {currentDate}",
-  "numberSentence": "計算された日付ベースの数値: {value}",
+  "numberSentence": "数値（本日の日付 {todayDate}）: {value}",
   "percentSentence": "パーセント値: {percentValue}",
   "firstDayOfWeekSentence": "週の最初の曜日: {firstDayOfWeek}",
+  "invalidLocaleMessage": "ロケール「{inputLocale}」は有効なロケールタグではありません。{fallbackLocale} の代替値を表示しています。",
   "share": "リンクをコピー",
   "copyConfirmation": "リンクをコピーしました。",
   "copyError": "リンクをコピーできませんでした。",
-  "pluralSentence": "ICUメッセージ形式の複数形:\n{exampleOne, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{exampleThree, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{exampleFive, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{count, plural, other {# <accent>個</accent>のリンゴがあります。}}"
+  "pluralSentence": "複数形（ICU メッセージ形式）:\n{exampleOne, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{exampleThree, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{exampleFive, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{count, plural, other {# <accent>個</accent>のリンゴがあります。}}"
 }
-

@@ -1,17 +1,18 @@
 {
-  "title": "Системная панель управления",
+  "title": "Демонстрационное приложение интернационализации на React JavaScript / TypeScript с инструментарием Node.js",
   "chooseLocale": "Введите локаль, чтобы отобразить значения на основе локали:",
   "searchPlaceholder": "например: ru, ru-RU, tr, tr-TR, en, en-US",
-  "inputLocaleSentence": "Введенная локаль: {inputLocale}",
+  "inputLocaleSentence": "Используемая локаль: {inputLocale}",
   "languageSentence": "Язык: {languageName}",
   "regionSentence": "Регион: {regionName}",
+  "icuSectionTitle": "Значения на основе библиотеки ICU",
   "dateSentence": "Дата / время: {currentDate}",
-  "numberSentence": "Рассчитанное числовое значение по дате: {value}",
+  "numberSentence": "Число (сегодняшняя дата: {todayDate}): {value}",
   "percentSentence": "Процентное значение: {percentValue}",
   "firstDayOfWeekSentence": "Первый день недели: {firstDayOfWeek}",
+  "invalidLocaleMessage": "Локаль \"{inputLocale}\" не является допустимым тегом локали. Показаны резервные значения для {fallbackLocale}.",
   "share": "Скопировать ссылку",
   "copyConfirmation": "Ссылка скопирована!",
   "copyError": "Не удалось скопировать ссылку.",
-  "pluralSentence": "Множественные формы с ICU Message Format:\n{exampleOne, plural, one {Есть # <accent>яблоко</accent>.} few {Есть # <accent>яблока</accent>.} many {Есть # <accent>яблок</accent>.} other {Есть # <accent>яблока</accent>.}}\n{exampleThree, plural, one {Есть # <accent>яблоко</accent>.} few {Есть # <accent>яблока</accent>.} many {Есть # <accent>яблок</accent>.} other {Есть # <accent>яблока</accent>.}}\n{exampleFive, plural, one {Есть # <accent>яблоко</accent>.} few {Есть # <accent>яблока</accent>.} many {Есть # <accent>яблок</accent>.} other {Есть # <accent>яблока</accent>.}}\n{count, plural, one {Есть # <accent>яблоко</accent>.} few {Есть # <accent>яблока</accent>.} many {Есть # <accent>яблок</accent>.} other {Есть # <accent>яблока</accent>.}}"
+  "pluralSentence": "Множественные формы (формат сообщений ICU):\n{exampleOne, plural, one {Есть # <accent>яблоко</accent>.} few {Есть # <accent>яблока</accent>.} many {Есть # <accent>яблок</accent>.} other {Есть # <accent>яблока</accent>.}}\n{exampleThree, plural, one {Есть # <accent>яблоко</accent>.} few {Есть # <accent>яблока</accent>.} many {Есть # <accent>яблок</accent>.} other {Есть # <accent>яблока</accent>.}}\n{exampleFive, plural, one {Есть # <accent>яблоко</accent>.} few {Есть # <accent>яблока</accent>.} many {Есть # <accent>яблок</accent>.} other {Есть # <accent>яблока</accent>.}}\n{count, plural, one {Есть # <accent>яблоко</accent>.} few {Есть # <accent>яблока</accent>.} many {Есть # <accent>яблок</accent>.} other {Есть # <accent>яблока</accent>.}}"
 }
-

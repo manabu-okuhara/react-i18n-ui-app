@@ -32,10 +32,12 @@ const TRANSLATABLE_KEYS = [
   'inputLocaleSentence',
   'languageSentence',
   'regionSentence',
+  'icuSectionTitle',
   'dateSentence',
   'numberSentence',
   'percentSentence',
   'firstDayOfWeekSentence',
+  'invalidLocaleMessage',
   'share',
   'copyConfirmation',
   'copyError'
@@ -46,10 +48,12 @@ function normalizeLocale(locale) {
     return '';
   }
 
+  const sanitizedLocale = locale.replace(/_/g, '-').trim();
+
   try {
-    return new Intl.Locale(locale).toString();
+    return new Intl.Locale(sanitizedLocale).toString();
   } catch {
-    return locale;
+    return sanitizedLocale;
   }
 }
 

@@ -13,10 +13,12 @@ export function normalizeLocale(locale?: string): string {
     return '';
   }
 
+  const sanitizedLocale = locale.replace(/_/g, '-').trim();
+
   try {
-    return new Intl.Locale(locale).toString();
+    return new Intl.Locale(sanitizedLocale).toString();
   } catch {
-    return locale;
+    return sanitizedLocale;
   }
 }
 
@@ -49,4 +51,3 @@ export function resolveLocale(
   const resolved = candidates.find((candidate) => messages[candidate]);
   return resolved || DEFAULT_LOCALE;
 }
-

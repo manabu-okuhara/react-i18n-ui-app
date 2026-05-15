@@ -90,9 +90,13 @@ function renderNumberWithSeparatorColors(value) {
   });
 }
 
-function renderValueSentence(message, renderedValue) {
+function renderValueSentence(message, locale, values, renderedValue) {
   const marker = '__VALUE__';
-  const templated = message.replace('{value}', marker);
+  const templated = formatMessage(
+    message.replace('{value}', marker),
+    values,
+    locale
+  );
   const [before, after] = templated.split(marker);
 
   return (
@@ -150,6 +154,7 @@ function Dashboard() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [preparedBundle, setPreparedBundle] = useState(null);
   const [isPreparing, setIsPreparing] = useState(false);
+  const [lastSubmittedLocale, setLastSubmittedLocale] = useState('');
 
   const customerFallbacks = useMemo(
     () => customerLocaleConfig.localeFallbacks || {},
@@ -157,6 +162,7 @@ function Dashboard() {
   );
   const activeMessages = preparedBundle?.messages || BASE_MESSAGES;
   const isRTL = preparedBundle?.isRTL || false;
+  const preparedLocale = preparedBundle?.inputLocale || '';
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -179,7 +185,7 @@ function Dashboard() {
   const submitLocale = async (nextLocale) => {
     const trimmedLocale = nextLocale.trim();
 
-    if (!trimmedLocale) {
+    if (!trimmedLocale || (isPreparing && trimmedLocale === lastSubmittedLocale) || trimmedLocale === preparedLocale) {
       return;
     }
 
@@ -187,6 +193,7 @@ function Dashboard() {
     setSearchTerm(trimmedLocale);
     setShowDropdown(false);
     setIsPreparing(true);
+    setLastSubmittedLocale(trimmedLocale);
 
     try {
       const bundle = await requestLocaleBundle(trimmedLocale, customerFallbacks);
@@ -206,9 +213,9 @@ function Dashboard() {
   };
 
   const displayContent = preparedBundle
-    ? {
-        inputLocaleDisplay: renderFormattedMessage(preparedBundle.messages.inputLocaleSentence, preparedBundle.formattingLocale, {
-          inputLocale: preparedBundle.inputLocale
+      ? {
+        inputLocaleDisplay: renderFormattedMessage(preparedBundle.messages.inputLocaleSentence, preparedBundle.inputLocale, {
+          inputLocale: preparedBundle.inputLocaleDisplay
         }),
         languageDisplay: renderFormattedMessage(preparedBundle.messages.languageSentence, preparedBundle.formattingLocale, {
           languageName: preparedBundle.values.languageName
@@ -216,11 +223,14 @@ function Dashboard() {
         regionDisplay: renderFormattedMessage(preparedBundle.messages.regionSentence, preparedBundle.formattingLocale, {
           regionName: preparedBundle.values.regionName
         }),
+        icuSectionTitle: preparedBundle.messages.icuSectionTitle,
         dateDisplay: renderFormattedMessage(preparedBundle.messages.dateSentence, preparedBundle.formattingLocale, {
           currentDate: preparedBundle.values.currentDate
         }),
         numberDisplay: renderValueSentence(
           preparedBundle.messages.numberSentence,
+          preparedBundle.formattingLocale,
+          { todayDate: preparedBundle.values.todayDate },
           renderNumberWithSeparatorColors(preparedBundle.values.formattedNumber)
         ),
         percentDisplay: renderFormattedMessage(preparedBundle.messages.percentSentence, preparedBundle.formattingLocale, {
@@ -231,6 +241,7 @@ function Dashboard() {
           preparedBundle.formattingLocale,
           { firstDayOfWeek: preparedBundle.values.firstDayOfWeek }
         ),
+        warningMessage: preparedBundle.warningMessage,
         pluralDisplay: preparedBundle.values.pluralMessage
       }
     : null;
@@ -261,6 +272,9 @@ function Dashboard() {
           onChange={(event) => {
             setSearchTerm(event.target.value);
             setShowDropdown(true);
+          }}
+          onBlur={() => {
+            submitLocale(searchTerm);
           }}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
@@ -297,9 +311,13 @@ function Dashboard() {
 
       {displayContent && (
         <div style={styles.result}>
+          {displayContent.warningMessage ? (
+            <p style={styles.warningText}>{displayContent.warningMessage}</p>
+          ) : null}
           <p style={styles.text}>{displayContent.inputLocaleDisplay}</p>
           <p style={styles.text}>{displayContent.languageDisplay}</p>
           <p style={styles.text}>{displayContent.regionDisplay}</p>
+          <p style={styles.sectionHeading}>{displayContent.icuSectionTitle}</p>
           <p style={styles.text}>{displayContent.dateDisplay}</p>
           <p style={styles.text}>{displayContent.numberDisplay}</p>
           <p style={styles.text}>{displayContent.percentDisplay}</p>
@@ -317,7 +335,7 @@ const styles = {
   container: {
     padding: '25px',
     fontFamily: 'sans-serif',
-    maxWidth: '420px',
+    maxWidth: '630px',
     margin: '40px auto',
     border: '1px solid #ddd',
     borderRadius: '16px',
@@ -335,15 +353,17 @@ const styles = {
   },
   header: {
     margin: 0,
-    fontSize: '1.6rem'
+    fontSize: '1.6rem',
+    lineHeight: 1.2
   },
   shareBtn: {
     border: 'none',
     borderRadius: '8px',
-    padding: '10px 12px',
+    padding: '15px 18px',
     backgroundColor: '#282c34',
     color: '#fff',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    fontSize: '21px'
   },
   searchContainer: {
     marginBottom: '20px'
@@ -358,7 +378,7 @@ const styles = {
     color: 'black',
     textAlign: 'inherit',
     direction: 'inherit',
-    fontSize: '14px'
+    fontSize: '21px'
   },
   dropdown: {
     display: 'grid',
@@ -380,10 +400,10 @@ const styles = {
   },
   optionCode: {
     color: 'black',
-    fontSize: '14px'
+    fontSize: '21px'
   },
   optionLabel: {
-    fontSize: '12px',
+    fontSize: '18px',
     opacity: 0.7
   },
   valueText: {
@@ -405,20 +425,36 @@ const styles = {
   },
   result: {
     display: 'grid',
-    gap: '8px'
+    gap: '12px'
   },
   text: {
     color: 'black',
     margin: 0,
     lineHeight: 1.5,
-    fontSize: '14px'
+    fontSize: '21px'
+  },
+  sectionHeading: {
+    color: 'black',
+    margin: 0,
+    lineHeight: 1.5,
+    fontSize: '21px',
+    fontWeight: 700
+  },
+  warningText: {
+    margin: 0,
+    padding: '12px 14px',
+    borderRadius: '8px',
+    backgroundColor: '#fff3cd',
+    color: '#7a4b00',
+    fontSize: '21px',
+    lineHeight: 1.5
   },
   label: {
     display: 'block',
     marginBottom: '8px',
     fontWeight: 'bold',
     textAlign: 'inherit',
-    fontSize: '14px'
+    fontSize: '21px'
   }
 };
 
