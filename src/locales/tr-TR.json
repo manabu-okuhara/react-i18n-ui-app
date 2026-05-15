@@ -1,17 +1,18 @@
 {
-  "title": "Sistem Panosu",
+  "title": "Node.js araclari uzerinde React JavaScript / TypeScript kullanan Uluslararasilastirma Demo Uygulamasi",
   "chooseLocale": "Yerel degerlere gore degerleri gostermek icin bir yerel ayar girin:",
   "searchPlaceholder": "or. tr, tr-TR, en, en-US",
-  "inputLocaleSentence": "Giris yerel ayari: {inputLocale}",
+  "inputLocaleSentence": "Kullanilan yerel ayar: {inputLocale}",
   "languageSentence": "Dil: {languageName}",
   "regionSentence": "Bolge: {regionName}",
+  "icuSectionTitle": "ICU kutuphanesi tabanli degerler",
   "dateSentence": "Tarih / Saat: {currentDate}",
-  "numberSentence": "Tarihe dayali hesaplanan sayi: {value}",
+  "numberSentence": "Sayi (bugunun tarihi: {todayDate}): {value}",
   "percentSentence": "Yuzde Degeri: {percentValue}",
   "firstDayOfWeekSentence": "Haftanin Ilk Gunu: {firstDayOfWeek}",
+  "invalidLocaleMessage": "\"{inputLocale}\" gecerli bir yerel ayar etiketi degil. {fallbackLocale} icin yedek degerler gosteriliyor.",
   "share": "Baglantiyi Kopyala",
   "copyConfirmation": "Baglanti kopyalandi!",
   "copyError": "Baglanti kopyalanamadi.",
-  "pluralSentence": "ICU Message Format ile Cogullar:\n{exampleOne, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}\n{exampleThree, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}\n{exampleFive, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}\n{count, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}"
+  "pluralSentence": "Cogullar (ICU Message Format):\n{exampleOne, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}\n{exampleThree, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}\n{exampleFive, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}\n{count, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}"
 }
-

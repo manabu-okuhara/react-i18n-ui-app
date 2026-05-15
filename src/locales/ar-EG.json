@@ -1,17 +1,18 @@
 {
-  "title": "لوحة تحكم النظام",
+  "title": "تطبيق عرض توضيحي للتدويل باستخدام React JavaScript / TypeScript على أدوات Node.js",
   "chooseLocale": "أدخل الإعدادات المحلية لعرض القيم المستندة إلى الإعدادات المحلية:",
   "searchPlaceholder": "مثال: ar, ar-EG, tr, tr-TR, en, en-US",
-  "inputLocaleSentence": "الإعدادات المحلية المدخلة: {inputLocale}",
+  "inputLocaleSentence": "الإعدادات المحلية المستخدمة: {inputLocale}",
   "languageSentence": "اللغة: {languageName}",
   "regionSentence": "المنطقة: {regionName}",
+  "icuSectionTitle": "قيم مستندة إلى مكتبة ICU",
   "dateSentence": "التاريخ / الوقت: {currentDate}",
-  "numberSentence": "الرقم المحسوب بناءً على التاريخ: {value}",
+  "numberSentence": "الرقم (تاريخ اليوم {todayDate}): {value}",
   "percentSentence": "قيمة النسبة المئوية: {percentValue}",
   "firstDayOfWeekSentence": "أول يوم في الأسبوع: {firstDayOfWeek}",
+  "invalidLocaleMessage": "الإعدادات المحلية \"{inputLocale}\" ليست وسم إعدادات محلية صالحًا. يتم عرض قيم احتياطية لـ {fallbackLocale}.",
   "share": "نسخ الرابط",
   "copyConfirmation": "تم نسخ الرابط.",
   "copyError": "تعذر نسخ الرابط.",
-  "pluralSentence": "صيغ الجمع باستخدام ICU Message Format:\n{exampleOne, plural, zero {لا توجد <accent>تفاحات</accent>.} one {هناك <accent>تفاحة</accent> واحدة.} two {هناك <accent>تفاحتان</accent>.} few {هناك # <accent>تفاحات</accent>.} many {هناك # <accent>تفاحة</accent>.} other {هناك # <accent>تفاحة</accent>.}}\n{exampleThree, plural, zero {لا توجد <accent>تفاحات</accent>.} one {هناك <accent>تفاحة</accent> واحدة.} two {هناك <accent>تفاحتان</accent>.} few {هناك # <accent>تفاحات</accent>.} many {هناك # <accent>تفاحة</accent>.} other {هناك # <accent>تفاحة</accent>.}}\n{exampleFive, plural, zero {لا توجد <accent>تفاحات</accent>.} one {هناك <accent>تفاحة</accent> واحدة.} two {هناك <accent>تفاحتان</accent>.} few {هناك # <accent>تفاحات</accent>.} many {هناك # <accent>تفاحة</accent>.} other {هناك # <accent>تفاحة</accent>.}}\n{count, plural, zero {لا توجد <accent>تفاحات</accent>.} one {هناك <accent>تفاحة</accent> واحدة.} two {هناك <accent>تفاحتان</accent>.} few {هناك # <accent>تفاحات</accent>.} many {هناك # <accent>تفاحة</accent>.} other {هناك # <accent>تفاحة</accent>.}}"
+  "pluralSentence": "صيغ الجمع (تنسيق رسائل ICU):\n{exampleOne, plural, zero {لا توجد <accent>تفاحات</accent>.} one {هناك <accent>تفاحة</accent> واحدة.} two {هناك <accent>تفاحتان</accent>.} few {هناك # <accent>تفاحات</accent>.} many {هناك # <accent>تفاحة</accent>.} other {هناك # <accent>تفاحة</accent>.}}\n{exampleThree, plural, zero {لا توجد <accent>تفاحات</accent>.} one {هناك <accent>تفاحة</accent> واحدة.} two {هناك <accent>تفاحتان</accent>.} few {هناك # <accent>تفاحات</accent>.} many {هناك # <accent>تفاحة</accent>.} other {هناك # <accent>تفاحة</accent>.}}\n{exampleFive, plural, zero {لا توجد <accent>تفاحات</accent>.} one {هناك <accent>تفاحة</accent> واحدة.} two {هناك <accent>تفاحتان</accent>.} few {هناك # <accent>تفاحات</accent>.} many {هناك # <accent>تفاحة</accent>.} other {هناك # <accent>تفاحة</accent>.}}\n{count, plural, zero {لا توجد <accent>تفاحات</accent>.} one {هناك <accent>تفاحة</accent> واحدة.} two {هناك <accent>تفاحتان</accent>.} few {هناك # <accent>تفاحات</accent>.} many {هناك # <accent>تفاحة</accent>.} other {هناك # <accent>تفاحة</accent>.}}"
 }
-

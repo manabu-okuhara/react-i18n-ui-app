@@ -20,6 +20,16 @@ export const STATIC_MESSAGES = {
 
 export const BASE_MESSAGES = enUS;
 
+function isValidLocaleForIntl(locale) {
+  try {
+    new Intl.Locale(locale);
+    new Intl.DateTimeFormat(locale);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function getLikelyLocale(locale) {
   const normalized = normalizeLocale(locale);
 
@@ -43,12 +53,36 @@ export function getLikelyLocale(locale) {
   }
 }
 
-function getFormattingLocale(locale) {
-  return getLikelyLocale(locale);
+function getLikelyLocaleForLanguage(locale) {
+  try {
+    const language = new Intl.Locale(locale).language;
+    return getLikelyLocale(language);
+  } catch {
+    return getLikelyLocale(locale);
+  }
+}
+
+function getRegionalFormattingLocale(locale) {
+  const likelyLocale = getLikelyLocale(locale);
+
+  try {
+    const localeInfo = new Intl.Locale(likelyLocale).maximize();
+
+    if (!localeInfo.region) {
+      return likelyLocale;
+    }
+
+    const regionalOverrideLocale = new Intl.Locale(
+      `${localeInfo.language}-u-rg-${localeInfo.region.toLowerCase()}zzzz`
+    );
+    return regionalOverrideLocale.toString();
+  } catch {
+    return likelyLocale;
+  }
 }
 
 function getDisplayNamesLocale(locale) {
-  return [getFormattingLocale(locale), 'en-US'];
+  return [getLikelyLocale(locale), 'en-US'];
 }
 
 function isRTLLocale(locale) {
@@ -129,9 +163,9 @@ function getLanguageName(locale) {
   }
 }
 
-function getFirstDayOfWeek(locale) {
+function getFirstDayOfWeek(regionLocale, displayLocale = regionLocale) {
   try {
-    const localeInfo = new Intl.Locale(locale);
+    const localeInfo = new Intl.Locale(regionLocale);
     const intlFirstDay =
       localeInfo.getWeekInfo?.().firstDay ??
       localeInfo.weekInfo?.firstDay ??
@@ -148,7 +182,7 @@ function getFirstDayOfWeek(locale) {
       7: new Date(Date.UTC(2023, 0, 7, 12))
     };
 
-    return new Intl.DateTimeFormat(locale, {
+    return new Intl.DateTimeFormat(displayLocale, {
       weekday: 'long',
       timeZone: 'UTC'
     }).format(weekdayDateMap[firstDayOfWeek]);
@@ -162,7 +196,15 @@ export function buildPreparedLocaleBundle({
   messages,
   now = new Date()
 }) {
-  const formattingLocale = getFormattingLocale(inputLocale);
+  const requestedLocale = normalizeLocale(inputLocale);
+  const localeUsedCandidate = getLikelyLocale(requestedLocale);
+  const localeUsed = isValidLocaleForIntl(localeUsedCandidate)
+    ? localeUsedCandidate
+    : 'en-US';
+  const regionalFormattingCandidate = getRegionalFormattingLocale(localeUsed);
+  const formattingLocale = isValidLocaleForIntl(regionalFormattingCandidate)
+    ? regionalFormattingCandidate
+    : localeUsed;
   const mergedMessages = { ...BASE_MESSAGES, ...messages };
   const year = now.getFullYear() % 100;
   const rawValue =
@@ -172,19 +214,38 @@ export function buildPreparedLocaleBundle({
     year / 100;
 
   return {
-    inputLocale,
+    inputLocale: localeUsed,
+    inputLocaleDisplay:
+      formattingLocale === localeUsed || localeUsed === getLikelyLocaleForLanguage(localeUsed)
+        ? localeUsed
+        : `${localeUsed} (${formattingLocale})`,
     formattingLocale,
     messages: mergedMessages,
-    isRTL: isRTLLocale(formattingLocale),
+    isRTL: isRTLLocale(localeUsed),
+    warningMessage: localeUsedCandidate === localeUsed
+      ? ''
+      : formatMessage(
+          mergedMessages.invalidLocaleMessage,
+          {
+            inputLocale: requestedLocale || inputLocale,
+            fallbackLocale: localeUsed
+          },
+          localeUsed
+        ),
     values: {
-      languageName: getLanguageName(formattingLocale),
-      regionName: getRegionName(formattingLocale),
+      languageName: getLanguageName(localeUsed),
+      regionName: getRegionName(localeUsed),
       currentDate: now.toLocaleString(formattingLocale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
+      }),
+      todayDate: now.toLocaleDateString(formattingLocale, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       }),
       formattedNumber: new Intl.NumberFormat(formattingLocale, {
         minimumFractionDigits: 2,
@@ -195,7 +256,7 @@ export function buildPreparedLocaleBundle({
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
       }).format(0.8),
-      firstDayOfWeek: getFirstDayOfWeek(formattingLocale),
+      firstDayOfWeek: getFirstDayOfWeek(formattingLocale, localeUsed),
       pluralMessage: formatMessage(
         mergedMessages.pluralSentence,
         {
@@ -204,7 +265,7 @@ export function buildPreparedLocaleBundle({
           exampleFive: 5,
           count: now.getSeconds() % 10
         },
-        formattingLocale
+        localeUsed
       )
     }
   };
