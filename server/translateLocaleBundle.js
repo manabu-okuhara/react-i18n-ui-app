@@ -232,7 +232,7 @@ async function translateLocaleBundle(inputLocale) {
   const { bundleLocale, messages: fallbackMessages } = resolveStaticMessages(normalized, customerFallbacks);
   const apiKey = process.env.LIBRETRANSLATE_API_KEY || '';
 
-  if (bundleLocale !== DEFAULT_LOCALE || normalized === DEFAULT_LOCALE) {
+  if (bundleLocale !== DEFAULT_LOCALE || getLanguage(bundleLocale) === getLanguage(normalized)) {
     return {
       locale: normalized,
       messages: fallbackMessages

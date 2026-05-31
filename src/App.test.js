@@ -99,7 +99,121 @@ test('uses backend-translated bundle for arbitrary locales after Enter', async (
   );
 });
 
-test('falls back to english copy while keeping requested locale formatting when backend is unavailable', async () => {
+test('uses client-side automated translation when backend is unavailable', async () => {
+  global.fetch.mockImplementation((url) => {
+    if (url === '/api/translate-locale-bundle') {
+      return Promise.reject(new Error('offline'));
+    }
+
+    const requestUrl = new URL(url);
+    const sourceText = requestUrl.searchParams.get('q');
+    const translations = {
+      'Internationalization Demo App using React JavaScript / TypeScript on Node.js tooling': '국제화 데모 앱',
+      'Enter Locale to display locale based values:': '로캘 기반 값을 표시할 로캘을 입력하세요:',
+      'e.g. en, en-US, ja, ja-JP, tr, tr-TR': '예: ko, ko-KR, en, en-US',
+      'Locale Used: {inputLocale}': '사용된 로캘: {inputLocale}',
+      'Language: {languageName}': '언어: {languageName}',
+      'Region: {regionName}': '지역: {regionName}',
+      'ICU Library based values': 'ICU 라이브러리 기반 값',
+      'Date / Time: {currentDate}': '날짜 / 시간: {currentDate}',
+      'Number (Today\'s date of {todayDate}): {value}': '숫자(오늘 날짜 {todayDate}): {value}',
+      'Percent Value: {percentValue}': '백분율 값: {percentValue}',
+      'First Day of Week: {firstDayOfWeek}': '주의 첫째 요일: {firstDayOfWeek}',
+      'The locale "{inputLocale}" is not a valid locale tag. Showing fallback values for {fallbackLocale}.': '"{inputLocale}" 로캘 태그가 올바르지 않아 {fallbackLocale} 기준의 대체 값을 표시합니다.',
+      'Copy Link': '링크 복사',
+      'Link copied!': '링크가 복사되었습니다.',
+      'Unable to copy the link.': '링크를 복사할 수 없습니다.',
+      'Plurals (ICU Message Format):': '복수형(ICU 메시지 형식):',
+      'There is 1 apple.': '사과 1개가 있습니다.',
+      'There are 3 apples.': '사과 3개가 있습니다.',
+      'There are 5 apples.': '사과 5개가 있습니다.'
+    };
+
+    const translatedText = translations[sourceText] || '사과 7개가 있습니다.';
+
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({
+        responseData: { translatedText }
+      })
+    });
+  });
+
+  render(<App />);
+
+  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
+  fireEvent.change(input, { target: { value: 'ko-KR' } });
+  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+
+  expect(await screen.findByText(/사용된 로캘:/)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '국제화 데모 앱' })).toBeInTheDocument();
+  expect(screen.getByText(/언어:/)).toBeInTheDocument();
+  expect(screen.getByText(/지역:/)).toBeInTheDocument();
+  expect(screen.getByText(/ICU 라이브러리 기반 값/)).toBeInTheDocument();
+  expect(screen.getByText(/백분율 값:/)).toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getAllByText(/Korean|한국어/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/South Korea|대한민국|한국/).length).toBeGreaterThan(0);
+  });
+});
+
+test('uses client-side automated translation when backend returns english fallback labels', async () => {
+  global.fetch.mockImplementation((url, options) => {
+    if (url === '/api/translate-locale-bundle') {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          locale: 'de-DE',
+          messages: BASE_MESSAGES
+        })
+      });
+    }
+
+    const requestUrl = new URL(url);
+    const sourceText = requestUrl.searchParams.get('q');
+    const translations = {
+      'Internationalization Demo App using React JavaScript / TypeScript on Node.js tooling': 'Internationalisierungs-Demo-App',
+      'Enter Locale to display locale based values:': 'Geben Sie Gebietsschema ein, um gebietsschemabasierte Werte anzuzeigen:',
+      'e.g. en, en-US, ja, ja-JP, tr, tr-TR': 'z. B. de, de-DE, en, en-US',
+      'Locale Used: {inputLocale}': 'Verwendetes Gebietsschema: {inputLocale}',
+      'Language: {languageName}': 'Sprache: {languageName}',
+      'Region: {regionName}': 'Region: {regionName}',
+      'ICU Library based values': 'ICU-Bibliothek basierte Werte',
+      'Date / Time: {currentDate}': 'Datum / Uhrzeit: {currentDate}',
+      'Number (Today\'s date of {todayDate}): {value}': 'Nummer (heutiges Datum {todayDate}): {value}',
+      'Percent Value: {percentValue}': 'Prozentwert: {percentValue}',
+      'First Day of Week: {firstDayOfWeek}': 'Erster Tag der Woche: {firstDayOfWeek}',
+      'The locale "{inputLocale}" is not a valid locale tag. Showing fallback values for {fallbackLocale}.': 'Das Gebietsschema "{inputLocale}" ist nicht gueltig. Fallback-Werte fuer {fallbackLocale} werden angezeigt.',
+      'Copy Link': 'Link kopieren',
+      'Link copied!': 'Link kopiert!',
+      'Unable to copy the link.': 'Der Link konnte nicht kopiert werden.',
+      'Plurals (ICU Message Format):': 'Plural mit ICU-Nachrichtenformat:',
+      'There is 1 apple.': 'Es gibt 1 Apfel.',
+      'There are 3 apples.': 'Es gibt 3 Aepfel.',
+      'There are 5 apples.': 'Es gibt 5 Aepfel.'
+    };
+
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({
+        responseData: { translatedText: translations[sourceText] || 'Es gibt 7 Aepfel.' }
+      })
+    });
+  });
+
+  render(<App />);
+
+  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
+  fireEvent.change(input, { target: { value: 'de-DE' } });
+  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+
+  expect(await screen.findByText(/Verwendetes Gebietsschema:/)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Internationalisierungs-Demo-App' })).toBeInTheDocument();
+  expect(screen.getByText(/Sprache:/)).toBeInTheDocument();
+  expect(screen.getByText(/Region:/)).toBeInTheDocument();
+});
+
+test('falls back to english copy while keeping requested locale formatting when automated translation is unavailable', async () => {
   render(<App />);
 
   const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
@@ -177,6 +291,20 @@ test('reuses the ru-RU bundle for a language-only Russian locale without calling
   expect(global.fetch).not.toHaveBeenCalled();
 });
 
+test('reuses English labels for English mixed locales without calling the translator', async () => {
+  render(<App />);
+
+  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
+  fireEvent.change(input, { target: { value: 'en-JP' } });
+  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+
+  expect(await screen.findByText(/Locale Used:/)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /Internationalization Demo App using React JavaScript \/ TypeScript on Node\.js tooling/i })).toBeInTheDocument();
+  expect(screen.getAllByText(/English|英語/).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/Japan|日本/).length).toBeGreaterThan(0);
+  expect(global.fetch).not.toHaveBeenCalled();
+});
+
 test('uses region-based formatting values for mixed locales like tr-JP', () => {
   const now = new Date(Date.UTC(2026, 4, 14, 16, 36));
   const bundle = buildPreparedLocaleBundle({
@@ -186,19 +314,19 @@ test('uses region-based formatting values for mixed locales like tr-JP', () => {
   });
 
   expect(bundle.inputLocale).toBe('tr-JP');
-  expect(bundle.formattingLocale).toBe('tr-u-rg-jpzzzz');
+  expect(bundle.formattingLocale).toBe('ja-JP');
   expect(bundle.values.languageName.toLowerCase()).toMatch(/türkçe|turkish/);
   expect(bundle.values.regionName.toLowerCase()).toMatch(/japonya|japan/);
-  expect(bundle.values.firstDayOfWeek.toLowerCase()).toMatch(/pazar|sunday/);
+  expect(bundle.values.firstDayOfWeek.toLowerCase()).toMatch(/日|sunday/);
   expect(bundle.values.percentValue).toBe(
-    new Intl.NumberFormat('tr-u-rg-jpzzzz', {
+    new Intl.NumberFormat('ja-JP', {
       style: 'percent',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(0.8)
   );
   expect(bundle.values.currentDate).toBe(
-    now.toLocaleString('tr-u-rg-jpzzzz', {
+    now.toLocaleString('ja-JP', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -217,11 +345,11 @@ test('uses Turkish regional ordering for ja-TR while keeping Japanese language d
   });
 
   expect(bundle.inputLocale).toBe('ja-TR');
-  expect(bundle.formattingLocale).toBe('ja-u-rg-trzzzz');
+  expect(bundle.formattingLocale).toBe('tr-TR');
   expect(bundle.values.languageName).toMatch(/日本語|Japanese/);
   expect(bundle.values.regionName).toMatch(/トルコ|Turkey/);
   expect(bundle.values.currentDate).toBe(
-    now.toLocaleString('ja-u-rg-trzzzz', {
+    now.toLocaleString('tr-TR', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',

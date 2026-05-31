@@ -67,17 +67,37 @@ function getRegionalFormattingLocale(locale) {
 
   try {
     const localeInfo = new Intl.Locale(likelyLocale).maximize();
+    const region = localeInfo.region;
 
-    if (!localeInfo.region) {
-      return likelyLocale;
+    if (!region) {
+      return {
+        formattingLocale: 'en-US',
+        wasFallback: true
+      };
     }
 
-    const regionalOverrideLocale = new Intl.Locale(
-      `${localeInfo.language}-u-rg-${localeInfo.region.toLowerCase()}zzzz`
-    );
-    return regionalOverrideLocale.toString();
+    const regionLocaleInfo = new Intl.Locale(`und-${region}`).maximize();
+    const regionLanguage = regionLocaleInfo.language;
+
+    if (!regionLanguage) {
+      return {
+        formattingLocale: 'en-US',
+        wasFallback: true
+      };
+    }
+
+    const formattingLocale = `${regionLanguage}-${region}`;
+    new Intl.DateTimeFormat(formattingLocale);
+
+    return {
+      formattingLocale,
+      wasFallback: false
+    };
   } catch {
-    return likelyLocale;
+    return {
+      formattingLocale: 'en-US',
+      wasFallback: true
+    };
   }
 }
 
@@ -163,7 +183,7 @@ function getLanguageName(locale) {
   }
 }
 
-function getFirstDayOfWeek(regionLocale, displayLocale = regionLocale) {
+function getFirstDayOfWeek(regionLocale) {
   try {
     const localeInfo = new Intl.Locale(regionLocale);
     const intlFirstDay =
@@ -182,7 +202,7 @@ function getFirstDayOfWeek(regionLocale, displayLocale = regionLocale) {
       7: new Date(Date.UTC(2023, 0, 7, 12))
     };
 
-    return new Intl.DateTimeFormat(displayLocale, {
+    return new Intl.DateTimeFormat(regionLocale, {
       weekday: 'long',
       timeZone: 'UTC'
     }).format(weekdayDateMap[firstDayOfWeek]);
@@ -201,10 +221,10 @@ export function buildPreparedLocaleBundle({
   const localeUsed = isValidLocaleForIntl(localeUsedCandidate)
     ? localeUsedCandidate
     : 'en-US';
-  const regionalFormattingCandidate = getRegionalFormattingLocale(localeUsed);
-  const formattingLocale = isValidLocaleForIntl(regionalFormattingCandidate)
-    ? regionalFormattingCandidate
-    : localeUsed;
+  const {
+    formattingLocale,
+    wasFallback: didFallbackFormatting
+  } = getRegionalFormattingLocale(localeUsed);
   const mergedMessages = { ...BASE_MESSAGES, ...messages };
   const year = now.getFullYear() % 100;
   const rawValue =
@@ -222,16 +242,25 @@ export function buildPreparedLocaleBundle({
     formattingLocale,
     messages: mergedMessages,
     isRTL: isRTLLocale(localeUsed),
-    warningMessage: localeUsedCandidate === localeUsed
-      ? ''
-      : formatMessage(
+    warningMessage: localeUsedCandidate !== localeUsed
+      ? formatMessage(
           mergedMessages.invalidLocaleMessage,
           {
             inputLocale: requestedLocale || inputLocale,
             fallbackLocale: localeUsed
           },
           localeUsed
-        ),
+        )
+      : didFallbackFormatting
+        ? formatMessage(
+            mergedMessages.unresolvedLocaleMessage,
+            {
+              inputLocale: requestedLocale || inputLocale,
+              fallbackLocale: 'en-US'
+            },
+            localeUsed
+          )
+        : '',
     values: {
       languageName: getLanguageName(localeUsed),
       regionName: getRegionName(localeUsed),
@@ -256,7 +285,7 @@ export function buildPreparedLocaleBundle({
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
       }).format(0.8),
-      firstDayOfWeek: getFirstDayOfWeek(formattingLocale, localeUsed),
+      firstDayOfWeek: getFirstDayOfWeek(formattingLocale),
       pluralMessage: formatMessage(
         mergedMessages.pluralSentence,
         {

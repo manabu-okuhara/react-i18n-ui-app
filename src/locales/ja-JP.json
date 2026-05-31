@@ -14,5 +14,6 @@
   "share": "リンクをコピー",
   "copyConfirmation": "リンクをコピーしました。",
   "copyError": "リンクをコピーできませんでした。",
-  "pluralSentence": "複数形（ICU メッセージ形式）:\n{exampleOne, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{exampleThree, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{exampleFive, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{count, plural, other {# <accent>個</accent>のリンゴがあります。}}"
+  "pluralSentence": "複数形（ICU メッセージ形式）:\n{exampleOne, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{exampleThree, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{exampleFive, plural, other {# <accent>個</accent>のリンゴがあります。}}\n{count, plural, other {# <accent>個</accent>のリンゴがあります。}}",
+  "unresolvedLocaleMessage": "The locale \"{inputLocale}\" could not be resolved well. Using {fallbackLocale}."
 }
