@@ -14,5 +14,6 @@
   "share": "Baglantiyi Kopyala",
   "copyConfirmation": "Baglanti kopyalandi!",
   "copyError": "Baglanti kopyalanamadi.",
-  "pluralSentence": "Cogullar (ICU Message Format):\n{exampleOne, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}\n{exampleThree, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}\n{exampleFive, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}\n{count, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}"
+  "pluralSentence": "Cogullar (ICU Message Format):\n{exampleOne, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}\n{exampleThree, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}\n{exampleFive, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}\n{count, plural, one {# <accent>elma</accent> var.} other {# <accent>elma</accent> var.}}",
+  "unresolvedLocaleMessage": "The locale \"{inputLocale}\" could not be resolved well. Using {fallbackLocale}."
 }

@@ -14,5 +14,6 @@
   "share": "Copier le lien",
   "copyConfirmation": "Lien copie !",
   "copyError": "Impossible de copier le lien.",
-  "pluralSentence": "Pluriels (format de message ICU) :\n{exampleOne, plural, one {Il y a # <accent>pomme</accent>.} other {Il y a # <accent>pommes</accent>.}}\n{exampleThree, plural, one {Il y a # <accent>pomme</accent>.} other {Il y a # <accent>pommes</accent>.}}\n{exampleFive, plural, one {Il y a # <accent>pomme</accent>.} other {Il y a # <accent>pommes</accent>.}}\n{count, plural, one {Il y a # <accent>pomme</accent>.} other {Il y a # <accent>pommes</accent>.}}"
+  "pluralSentence": "Pluriels (format de message ICU) :\n{exampleOne, plural, one {Il y a # <accent>pomme</accent>.} other {Il y a # <accent>pommes</accent>.}}\n{exampleThree, plural, one {Il y a # <accent>pomme</accent>.} other {Il y a # <accent>pommes</accent>.}}\n{exampleFive, plural, one {Il y a # <accent>pomme</accent>.} other {Il y a # <accent>pommes</accent>.}}\n{count, plural, one {Il y a # <accent>pomme</accent>.} other {Il y a # <accent>pommes</accent>.}}",
+  "unresolvedLocaleMessage": "The locale \"{inputLocale}\" could not be resolved well. Using {fallbackLocale}."
 }
