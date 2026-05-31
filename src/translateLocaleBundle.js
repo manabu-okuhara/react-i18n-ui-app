@@ -285,7 +285,7 @@ export function buildPreparedLocaleBundle({
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
       }).format(0.8),
-      firstDayOfWeek: getFirstDayOfWeek(formattingLocale),
+      firstDayOfWeek: getFirstDayOfWeek(formattingLocale, localeUsed),
       pluralMessage: formatMessage(
         mergedMessages.pluralSentence,
         {
