@@ -1,0 +1,19 @@
+{
+  "title": "Aplikacja demonstracyjna internacjonalizacji z React JavaScript / TypeScript na narzedziach Node.js",
+  "chooseLocale": "Wprowadz ustawienia regionalne, aby wyswietlic wartosci oparte na ustawieniach regionalnych:",
+  "searchPlaceholder": "np. pl, pl-PL, en, en-US",
+  "inputLocaleSentence": "Uzyte ustawienia regionalne: {inputLocale}",
+  "languageSentence": "Jezyk: {languageName}",
+  "regionSentence": "Region: {regionName}",
+  "icuSectionTitle": "Wartosci oparte na bibliotece ICU",
+  "dateSentence": "Data / godzina: {currentDate}",
+  "numberSentence": "Liczba (dzisiejsza data {todayDate}): {value}",
+  "percentSentence": "Wartosc procentowa: {percentValue}",
+  "firstDayOfWeekSentence": "Pierwszy dzien tygodnia: {firstDayOfWeek}",
+  "invalidLocaleMessage": "Ustawienia regionalne „{inputLocale}” nie sa prawidlowym znacznikiem locale. Pokazywane sa wartosci zastepcze dla {fallbackLocale}.",
+  "share": "Kopiuj link",
+  "copyConfirmation": "Link skopiowany.",
+  "copyError": "Nie mozna skopiowac linku.",
+  "pluralSentence": "Liczba mnoga (ICU Message Format):\n{exampleOne, plural, one {Jest # <accent>jablko</accent>.} few {Sa # <accent>jablka</accent>.} many {Jest # <accent>jabłek</accent>.} other {Jest # <accent>jablka</accent>.}}\n{exampleThree, plural, one {Jest # <accent>jablko</accent>.} few {Sa # <accent>jablka</accent>.} many {Jest # <accent>jabłek</accent>.} other {Jest # <accent>jablka</accent>.}}\n{exampleFive, plural, one {Jest # <accent>jablko</accent>.} few {Sa # <accent>jablka</accent>.} many {Jest # <accent>jabłek</accent>.} other {Jest # <accent>jablka</accent>.}}\n{count, plural, one {Jest # <accent>jablko</accent>.} few {Sa # <accent>jablka</accent>.} many {Jest # <accent>jabłek</accent>.} other {Jest # <accent>jablka</accent>.}}",
+  "unresolvedLocaleMessage": "Nie udalo sie dobrze rozpoznac ustawien regionalnych „{inputLocale}”. Uzywany jest {fallbackLocale}."
+}

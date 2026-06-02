@@ -1,0 +1,19 @@
+{
+  "title": "Aplicacion de demostracion de internacionalizacion con React JavaScript / TypeScript sobre herramientas de Node.js",
+  "chooseLocale": "Ingrese una configuracion regional para mostrar valores basados en la configuracion regional:",
+  "searchPlaceholder": "p. ej. es, es-419, en, en-US",
+  "inputLocaleSentence": "Configuracion regional usada: {inputLocale}",
+  "languageSentence": "Idioma: {languageName}",
+  "regionSentence": "Region: {regionName}",
+  "icuSectionTitle": "Valores basados en la biblioteca ICU",
+  "dateSentence": "Fecha / hora: {currentDate}",
+  "numberSentence": "Numero (fecha de hoy {todayDate}): {value}",
+  "percentSentence": "Valor porcentual: {percentValue}",
+  "firstDayOfWeekSentence": "Primer dia de la semana: {firstDayOfWeek}",
+  "invalidLocaleMessage": "La configuracion regional \"{inputLocale}\" no es una etiqueta de configuracion regional valida. Se muestran valores de respaldo para {fallbackLocale}.",
+  "share": "Copiar enlace",
+  "copyConfirmation": "Enlace copiado.",
+  "copyError": "No se pudo copiar el enlace.",
+  "pluralSentence": "Plurales (ICU Message Format):\n{exampleOne, plural, one {Hay # <accent>manzana</accent>.} other {Hay # <accent>manzanas</accent>.}}\n{exampleThree, plural, one {Hay # <accent>manzana</accent>.} other {Hay # <accent>manzanas</accent>.}}\n{exampleFive, plural, one {Hay # <accent>manzana</accent>.} other {Hay # <accent>manzanas</accent>.}}\n{count, plural, one {Hay # <accent>manzana</accent>.} other {Hay # <accent>manzanas</accent>.}}",
+  "unresolvedLocaleMessage": "La configuracion regional \"{inputLocale}\" no se pudo resolver bien. Se usa {fallbackLocale}."
+}

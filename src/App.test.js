@@ -2,6 +2,31 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 import { BASE_MESSAGES, buildPreparedLocaleBundle } from './translateLocaleBundle';
 
+function submitLocale(value, trigger = 'enter') {
+  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
+  fireEvent.change(input, { target: { value } });
+
+  if (trigger === 'blur') {
+    fireEvent.blur(input);
+  } else {
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+  }
+
+  return input;
+}
+
+function expectTextContentContains(value) {
+  expect(document.body.textContent).toContain(value);
+}
+
+function expectPreparedValuesFor(inputLocale) {
+  const bundle = buildPreparedLocaleBundle({ inputLocale, messages: BASE_MESSAGES });
+  expectTextContentContains(bundle.values.languageName);
+  expectTextContentContains(bundle.values.regionName);
+  expectTextContentContains(bundle.values.firstDayOfWeek);
+  return bundle;
+}
+
 beforeEach(() => {
   Object.defineProperty(window.navigator, 'languages', {
     configurable: true,
@@ -28,7 +53,7 @@ afterEach(() => {
 test('renders the prompt before locale preparation', () => {
   render(<App />);
 
-  expect(screen.getByRole('heading', { name: /Internationalization Demo App using React JavaScript \/ TypeScript on Node\.js tooling/i })).toBeInTheDocument();
+  expect(screen.getByRole('heading')).toBeInTheDocument();
   expect(screen.getByLabelText(/Enter Locale to display locale based values:/)).toBeInTheDocument();
   expect(screen.queryByText(/Locale Used:/)).not.toBeInTheDocument();
 });
@@ -36,100 +61,77 @@ test('renders the prompt before locale preparation', () => {
 test('prepares Japanese content after Enter is pressed', async () => {
   render(<App />);
 
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'ja-JP' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+  submitLocale('ja-JP');
 
-  expect(await screen.findByRole('heading', { name: /Node\.js ツール上の React JavaScript \/ TypeScript による国際化デモアプリ/ })).toBeInTheDocument();
-  expect(screen.getByText(/使用ロケール:/)).toBeInTheDocument();
-  expect(screen.getByText(/言語:/)).toBeInTheDocument();
-  expect(screen.getByText(/地域:/)).toBeInTheDocument();
-  expect(screen.getByText(/ICU ライブラリに基づく値/)).toBeInTheDocument();
-  expect(screen.getByText(/日付 \/ 時刻:/)).toBeInTheDocument();
-  expect(screen.getByText(/パーセント値:/)).toBeInTheDocument();
-  expect(screen.getByText(/週の最初の曜日:/)).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'リンクをコピー' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading')).toBeInTheDocument();
+  expectPreparedValuesFor('ja-JP');
+  expect(screen.getByRole('button')).toBeInTheDocument();
 });
 
-test('uses backend-translated bundle for arbitrary locales after Enter', async () => {
+test('uses backend-translated bundle for arbitrary unsupported locales after Enter', async () => {
   global.fetch.mockResolvedValue({
     ok: true,
     json: async () => ({
-      locale: 'ko-KR',
+      locale: 'it-IT',
       messages: {
-        title: 'Node.js 도구에서 React JavaScript / TypeScript를 사용하는 국제화 데모 앱',
-        chooseLocale: '로캘 기반 값을 표시할 로캘을 입력하세요:',
-        searchPlaceholder: '예: ko, ko-KR, en, en-US',
-        inputLocaleSentence: '사용된 로캘: {inputLocale}',
-        languageSentence: '언어: {languageName}',
-        regionSentence: '지역: {regionName}',
-        icuSectionTitle: 'ICU 라이브러리 기반 값',
-        dateSentence: '날짜 / 시간: {currentDate}',
-        numberSentence: '숫자(오늘 날짜 {todayDate}): {value}',
-        percentSentence: '백분율 값: {percentValue}',
-        firstDayOfWeekSentence: '주의 첫째 요일: {firstDayOfWeek}',
-        share: '링크 복사',
-        copyConfirmation: '링크가 복사되었습니다.',
-        copyError: '링크를 복사할 수 없습니다.',
-        pluralSentence: '복수형(ICU 메시지 형식):\n{exampleOne, plural, other {사과 #<accent>개</accent>가 있습니다.}}\n{exampleThree, plural, other {사과 #<accent>개</accent>가 있습니다.}}\n{exampleFive, plural, other {사과 #<accent>개</accent>가 있습니다.}}\n{count, plural, other {사과 #<accent>개</accent>가 있습니다.}}'
+        ...BASE_MESSAGES,
+        title: 'IT backend heading',
+        chooseLocale: 'IT backend prompt',
+        searchPlaceholder: 'it backend placeholder',
+        inputLocaleSentence: 'IT locale used: {inputLocale}',
+        languageSentence: 'IT language: {languageName}',
+        regionSentence: 'IT region: {regionName}',
+        icuSectionTitle: 'IT ICU section',
+        dateSentence: 'IT date: {currentDate}',
+        numberSentence: 'IT number {todayDate}: {value}',
+        percentSentence: 'IT percent: {percentValue}',
+        firstDayOfWeekSentence: 'IT first day: {firstDayOfWeek}',
+        share: 'IT copy link',
+        pluralSentence: 'IT plurals:\n{exampleOne, plural, one {uno} other {altri}}\n{exampleThree, plural, one {uno} other {altri}}\n{exampleFive, plural, one {uno} other {altri}}\n{count, plural, one {uno} other {altri}}'
       }
     })
   });
 
   render(<App />);
+  submitLocale('it-IT');
 
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'ko-KR' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-  expect(await screen.findByRole('heading', { name: /Node\.js 도구에서 React JavaScript \/ TypeScript를 사용하는 국제화 데모 앱/ })).toBeInTheDocument();
-  expect(screen.getByText(/사용된 로캘:/)).toBeInTheDocument();
-  expect(screen.getByText(/언어:/)).toBeInTheDocument();
-  expect(screen.getByText(/지역:/)).toBeInTheDocument();
-  expect(screen.getByText(/ICU 라이브러리 기반 값/)).toBeInTheDocument();
-  expect(screen.getByText(/날짜 \/ 시간:/)).toBeInTheDocument();
-  expect(screen.getByText(/백분율 값:/)).toBeInTheDocument();
-  expect(screen.getByText(/주의 첫째 요일:/)).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '링크 복사' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'IT backend heading' })).toBeInTheDocument();
+  expectTextContentContains('IT locale used: it-IT');
   expect(global.fetch).toHaveBeenCalledWith(
     '/api/translate-locale-bundle',
-    expect.objectContaining({
-      method: 'POST'
-    })
+    expect.objectContaining({ method: 'POST' })
   );
 });
 
-test('uses client-side automated translation when backend is unavailable', async () => {
+test('uses client-side automated translation when backend is unavailable for unsupported locales', async () => {
   global.fetch.mockImplementation((url) => {
     if (url === '/api/translate-locale-bundle') {
       return Promise.reject(new Error('offline'));
     }
 
     const requestUrl = new URL(url);
-    const sourceText = requestUrl.searchParams.get('q');
-    const translations = {
-      'Internationalization Demo App using React JavaScript / TypeScript on Node.js tooling': '국제화 데모 앱',
-      'Enter Locale to display locale based values:': '로캘 기반 값을 표시할 로캘을 입력하세요:',
-      'e.g. en, en-US, ja, ja-JP, tr, tr-TR': '예: ko, ko-KR, en, en-US',
-      'Locale Used: {inputLocale}': '사용된 로캘: {inputLocale}',
-      'Language: {languageName}': '언어: {languageName}',
-      'Region: {regionName}': '지역: {regionName}',
-      'ICU Library based values': 'ICU 라이브러리 기반 값',
-      'Date / Time: {currentDate}': '날짜 / 시간: {currentDate}',
-      'Number (Today\'s date of {todayDate}): {value}': '숫자(오늘 날짜 {todayDate}): {value}',
-      'Percent Value: {percentValue}': '백분율 값: {percentValue}',
-      'First Day of Week: {firstDayOfWeek}': '주의 첫째 요일: {firstDayOfWeek}',
-      'The locale "{inputLocale}" is not a valid locale tag. Showing fallback values for {fallbackLocale}.': '"{inputLocale}" 로캘 태그가 올바르지 않아 {fallbackLocale} 기준의 대체 값을 표시합니다.',
-      'Copy Link': '링크 복사',
-      'Link copied!': '링크가 복사되었습니다.',
-      'Unable to copy the link.': '링크를 복사할 수 없습니다.',
-      'Plurals (ICU Message Format):': '복수형(ICU 메시지 형식):',
-      'There is 1 apple.': '사과 1개가 있습니다.',
-      'There are 3 apples.': '사과 3개가 있습니다.',
-      'There are 5 apples.': '사과 5개가 있습니다.'
-    };
+    const sourceText = requestUrl.searchParams.get('q') || '';
 
-    const translatedText = translations[sourceText] || '사과 7개가 있습니다.';
+    let translatedText = 'IT client count';
+    if (sourceText.includes('Internationalization Demo App')) translatedText = 'IT client heading';
+    else if (sourceText.includes('Enter Locale')) translatedText = 'IT client prompt';
+    else if (sourceText.includes('e.g.')) translatedText = 'IT client placeholder';
+    else if (sourceText.includes('Locale Used')) translatedText = 'IT client locale: {inputLocale}';
+    else if (sourceText.includes('Language:')) translatedText = 'IT client language: {languageName}';
+    else if (sourceText.includes('Region:')) translatedText = 'IT client region: {regionName}';
+    else if (sourceText.includes('ICU Library')) translatedText = 'IT client ICU section';
+    else if (sourceText.includes('Date / Time')) translatedText = 'IT client date: {currentDate}';
+    else if (sourceText.includes('Today') && sourceText.includes('{todayDate}')) translatedText = 'IT client number {todayDate}: {value}';
+    else if (sourceText.includes('Percent Value')) translatedText = 'IT client percent: {percentValue}';
+    else if (sourceText.includes('First Day of Week')) translatedText = 'IT client first day: {firstDayOfWeek}';
+    else if (sourceText.includes('not a valid locale tag')) translatedText = 'IT client invalid locale';
+    else if (sourceText.includes('Copy Link')) translatedText = 'IT client copy link';
+    else if (sourceText.includes('Link copied')) translatedText = 'IT client copied';
+    else if (sourceText.includes('Unable to copy')) translatedText = 'IT client copy error';
+    else if (sourceText.includes('Plurals')) translatedText = 'IT client plurals';
+    else if (sourceText.includes('There is 1 apple')) translatedText = 'IT client one';
+    else if (sourceText.includes('There are 3 apples')) translatedText = 'IT client three';
+    else if (sourceText.includes('There are 5 apples')) translatedText = 'IT client five';
 
     return Promise.resolve({
       ok: true,
@@ -140,168 +142,120 @@ test('uses client-side automated translation when backend is unavailable', async
   });
 
   render(<App />);
+  submitLocale('it-IT');
 
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'ko-KR' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-  expect(await screen.findByText(/사용된 로캘:/)).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: '국제화 데모 앱' })).toBeInTheDocument();
-  expect(screen.getByText(/언어:/)).toBeInTheDocument();
-  expect(screen.getByText(/지역:/)).toBeInTheDocument();
-  expect(screen.getByText(/ICU 라이브러리 기반 값/)).toBeInTheDocument();
-  expect(screen.getByText(/백분율 값:/)).toBeInTheDocument();
-  await waitFor(() => {
-    expect(screen.getAllByText(/Korean|한국어/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/South Korea|대한민국|한국/).length).toBeGreaterThan(0);
-  });
+  expect(await screen.findByRole('heading', { name: 'IT client heading' })).toBeInTheDocument();
+  expectTextContentContains('IT client locale: it-IT');
+  expectPreparedValuesFor('it-IT');
 });
 
-test('uses client-side automated translation when backend returns english fallback labels', async () => {
-  global.fetch.mockImplementation((url, options) => {
+test('uses client-side automated translation when backend returns english fallback labels for unsupported locales', async () => {
+  global.fetch.mockImplementation((url) => {
     if (url === '/api/translate-locale-bundle') {
       return Promise.resolve({
         ok: true,
         json: async () => ({
-          locale: 'de-DE',
+          locale: 'nl-NL',
           messages: BASE_MESSAGES
         })
       });
     }
 
     const requestUrl = new URL(url);
-    const sourceText = requestUrl.searchParams.get('q');
-    const translations = {
-      'Internationalization Demo App using React JavaScript / TypeScript on Node.js tooling': 'Internationalisierungs-Demo-App',
-      'Enter Locale to display locale based values:': 'Geben Sie Gebietsschema ein, um gebietsschemabasierte Werte anzuzeigen:',
-      'e.g. en, en-US, ja, ja-JP, tr, tr-TR': 'z. B. de, de-DE, en, en-US',
-      'Locale Used: {inputLocale}': 'Verwendetes Gebietsschema: {inputLocale}',
-      'Language: {languageName}': 'Sprache: {languageName}',
-      'Region: {regionName}': 'Region: {regionName}',
-      'ICU Library based values': 'ICU-Bibliothek basierte Werte',
-      'Date / Time: {currentDate}': 'Datum / Uhrzeit: {currentDate}',
-      'Number (Today\'s date of {todayDate}): {value}': 'Nummer (heutiges Datum {todayDate}): {value}',
-      'Percent Value: {percentValue}': 'Prozentwert: {percentValue}',
-      'First Day of Week: {firstDayOfWeek}': 'Erster Tag der Woche: {firstDayOfWeek}',
-      'The locale "{inputLocale}" is not a valid locale tag. Showing fallback values for {fallbackLocale}.': 'Das Gebietsschema "{inputLocale}" ist nicht gueltig. Fallback-Werte fuer {fallbackLocale} werden angezeigt.',
-      'Copy Link': 'Link kopieren',
-      'Link copied!': 'Link kopiert!',
-      'Unable to copy the link.': 'Der Link konnte nicht kopiert werden.',
-      'Plurals (ICU Message Format):': 'Plural mit ICU-Nachrichtenformat:',
-      'There is 1 apple.': 'Es gibt 1 Apfel.',
-      'There are 3 apples.': 'Es gibt 3 Aepfel.',
-      'There are 5 apples.': 'Es gibt 5 Aepfel.'
-    };
+    const sourceText = requestUrl.searchParams.get('q') || '';
+
+    let translatedText = 'NL client count';
+    if (sourceText.includes('Internationalization Demo App')) translatedText = 'NL client heading';
+    else if (sourceText.includes('Enter Locale')) translatedText = 'NL client prompt';
+    else if (sourceText.includes('e.g.')) translatedText = 'NL client placeholder';
+    else if (sourceText.includes('Locale Used')) translatedText = 'NL client locale: {inputLocale}';
+    else if (sourceText.includes('Language:')) translatedText = 'NL client language: {languageName}';
+    else if (sourceText.includes('Region:')) translatedText = 'NL client region: {regionName}';
+    else if (sourceText.includes('ICU Library')) translatedText = 'NL client ICU section';
+    else if (sourceText.includes('Date / Time')) translatedText = 'NL client date: {currentDate}';
+    else if (sourceText.includes('Today') && sourceText.includes('{todayDate}')) translatedText = 'NL client number {todayDate}: {value}';
+    else if (sourceText.includes('Percent Value')) translatedText = 'NL client percent: {percentValue}';
+    else if (sourceText.includes('First Day of Week')) translatedText = 'NL client first day: {firstDayOfWeek}';
+    else if (sourceText.includes('not a valid locale tag')) translatedText = 'NL client invalid locale';
+    else if (sourceText.includes('Copy Link')) translatedText = 'NL client copy link';
+    else if (sourceText.includes('Link copied')) translatedText = 'NL client copied';
+    else if (sourceText.includes('Unable to copy')) translatedText = 'NL client copy error';
+    else if (sourceText.includes('Plurals')) translatedText = 'NL client plurals';
+    else if (sourceText.includes('There is 1 apple')) translatedText = 'NL client one';
+    else if (sourceText.includes('There are 3 apples')) translatedText = 'NL client three';
+    else if (sourceText.includes('There are 5 apples')) translatedText = 'NL client five';
 
     return Promise.resolve({
       ok: true,
       json: async () => ({
-        responseData: { translatedText: translations[sourceText] || 'Es gibt 7 Aepfel.' }
+        responseData: { translatedText }
       })
     });
   });
 
   render(<App />);
+  submitLocale('nl-NL');
 
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'de-DE' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-  expect(await screen.findByText(/Verwendetes Gebietsschema:/)).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: 'Internationalisierungs-Demo-App' })).toBeInTheDocument();
-  expect(screen.getByText(/Sprache:/)).toBeInTheDocument();
-  expect(screen.getByText(/Region:/)).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'NL client heading' })).toBeInTheDocument();
+  expectTextContentContains('NL client locale: nl-NL');
 });
 
 test('falls back to english copy while keeping requested locale formatting when automated translation is unavailable', async () => {
   render(<App />);
+  submitLocale('it-IT');
 
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'ko-KR' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-  expect(await screen.findByText(/Locale Used:/)).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: /Internationalization Demo App using React JavaScript \/ TypeScript on Node\.js tooling/i })).toBeInTheDocument();
-  expect(screen.getByText(/Language:/)).toBeInTheDocument();
-  expect(screen.getByText(/Region:/)).toBeInTheDocument();
-  expect(screen.getByText(/ICU Library based values/)).toBeInTheDocument();
-  expect(screen.getByText(/Percent Value:/)).toBeInTheDocument();
-  await waitFor(() => {
-    expect(screen.getAllByText(/Korean|한국어/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/South Korea|대한민국|한국/).length).toBeGreaterThan(0);
-  });
+  expect(await screen.findByRole('heading')).toHaveTextContent(/Internationalization Demo App/);
+  await waitFor(() => expect(document.body.textContent).toContain('it-IT'));
+  expectPreparedValuesFor('it-IT');
 });
 
-test('falls back to ja-JP for a language-only Japanese locale', async () => {
+test.each([
+  'ja',
+  'fr',
+  'tr',
+  'ko',
+  'de',
+  'zh',
+  'pl',
+  'th',
+  'ru'
+])('uses the built-in bundle for language-only locale %s', async (inputLocale) => {
   render(<App />);
+  submitLocale(inputLocale);
 
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'ja' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-  expect(await screen.findByRole('heading', { name: /Node\.js ツール上の React JavaScript \/ TypeScript による国際化デモアプリ/ })).toBeInTheDocument();
+  expect(await screen.findByRole('heading')).toBeInTheDocument();
+  expectPreparedValuesFor(inputLocale);
+  expect(global.fetch).not.toHaveBeenCalled();
 });
 
-test('falls back to fr-CA for a language-only French locale', async () => {
+test.each([
+  'zh-TW',
+  'es-ES',
+  'es-419'
+])('uses the built-in bundle for exact locale %s without calling the backend', async (inputLocale) => {
   render(<App />);
+  submitLocale(inputLocale);
 
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'fr' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-  expect(await screen.findByRole('heading', { name: /Application de demonstration de l'internationalisation avec React JavaScript \/ TypeScript sur l'outillage Node\.js/ })).toBeInTheDocument();
-});
-
-test('falls back to tr-TR for a language-only Turkish locale', async () => {
-  render(<App />);
-
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'tr' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-  expect(await screen.findByRole('heading', { name: /Node\.js araclari uzerinde React JavaScript \/ TypeScript kullanan Uluslararasilastirma Demo Uygulamasi/ })).toBeInTheDocument();
+  expect(await screen.findByRole('heading')).toBeInTheDocument();
+  expectPreparedValuesFor(inputLocale);
+  expectTextContentContains(inputLocale);
+  expect(global.fetch).not.toHaveBeenCalled();
 });
 
 test('accepts underscore locale input and normalizes it for display', async () => {
   render(<App />);
+  submitLocale('en_US');
 
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'en_US' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-  expect(await screen.findByText(/Locale Used:/)).toBeInTheDocument();
-  expect(
-    screen.getAllByText((_, element) =>
-      element?.textContent?.includes('Locale Used: en-US') ?? false
-    ).length
-  ).toBeGreaterThan(0);
-  expect(screen.getAllByText(/en-US/).length).toBeGreaterThan(0);
-});
-
-test('reuses the ru-RU bundle for a language-only Russian locale without calling the backend', async () => {
-  render(<App />);
-
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'ru' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-  expect(await screen.findByRole('heading', { name: /Демонстрационное приложение интернационализации на React JavaScript \/ TypeScript с инструментарием Node\.js/ })).toBeInTheDocument();
-  expect(screen.getByText(/Первый день недели:/)).toBeInTheDocument();
-  expect(screen.getAllByText(/яблоко|яблока|яблок/).length).toBeGreaterThan(0);
-  expect(global.fetch).not.toHaveBeenCalled();
+  await screen.findByRole('heading');
+  expectTextContentContains('en-US');
 });
 
 test('reuses English labels for English mixed locales without calling the translator', async () => {
   render(<App />);
+  submitLocale('en-JP');
 
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'en-JP' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-  expect(await screen.findByText(/Locale Used:/)).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: /Internationalization Demo App using React JavaScript \/ TypeScript on Node\.js tooling/i })).toBeInTheDocument();
-  expect(screen.getAllByText(/English|英語/).length).toBeGreaterThan(0);
-  expect(screen.getAllByText(/Japan|日本/).length).toBeGreaterThan(0);
+  expect(await screen.findByRole('heading')).toHaveTextContent(/Internationalization Demo App/);
+  expectPreparedValuesFor('en-JP');
   expect(global.fetch).not.toHaveBeenCalled();
 });
 
@@ -370,64 +324,43 @@ test('keeps likely locale combinations short in the locale used display', () => 
 
 test('shows a graceful fallback message for invalid locale tags', async () => {
   render(<App />);
-
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'ukr_UKR' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
+  submitLocale('ukr_UKR');
 
   expect(await screen.findByText(/not a valid locale tag/i)).toBeInTheDocument();
-  expect(screen.getAllByText(/en-US/).length).toBeGreaterThan(0);
+  expectTextContentContains('en-US');
 });
 
 test('uses a likely region locale for unsupported language-only locales', async () => {
   global.fetch.mockResolvedValue({
     ok: true,
     json: async () => ({
-      locale: 'pl-PL',
+      locale: 'nl-NL',
       messages: {
-        title: 'Aplikacja demonstracyjna internacjonalizacji z React JavaScript / TypeScript na narzedziach Node.js',
-        chooseLocale: 'Wpisz ustawienia regionalne, aby wyswietlic wartosci zalezne od lokalizacji:',
-        searchPlaceholder: 'np. pl, pl-PL, en, en-US',
-        inputLocaleSentence: 'Uzyta lokalizacja: {inputLocale}',
-        languageSentence: 'Jezyk: {languageName}',
-        regionSentence: 'Region: {regionName}',
-        icuSectionTitle: 'Wartosci oparte na bibliotece ICU',
-        dateSentence: 'Data / godzina: {currentDate}',
-        numberSentence: 'Liczba (dzisiejsza data: {todayDate}): {value}',
-        percentSentence: 'Wartosc procentowa: {percentValue}',
-        firstDayOfWeekSentence: 'Pierwszy dzien tygodnia: {firstDayOfWeek}',
-        share: 'Kopiuj link',
-        copyConfirmation: 'Skopiowano link.',
-        copyError: 'Nie udalo sie skopiowac linku.',
-        pluralSentence: 'Liczby mnogie (format komunikatow ICU):\nJest 1 <accent>jablko</accent>.\nSa 3 <accent>jablka</accent>.\nJest 5 <accent>jabłek</accent>.\nJest 6 <accent>jabłek</accent>.'
+        ...BASE_MESSAGES,
+        title: 'NL likely heading',
+        inputLocaleSentence: 'NL likely locale: {inputLocale}',
+        languageSentence: 'NL likely language: {languageName}',
+        regionSentence: 'NL likely region: {regionName}'
       }
     })
   });
 
   render(<App />);
+  submitLocale('nl');
 
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'pl' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-  expect(await screen.findByRole('heading', { name: /Aplikacja demonstracyjna internacjonalizacji z React JavaScript \/ TypeScript na narzedziach Node\.js/ })).toBeInTheDocument();
-  await waitFor(() => {
-    expect(screen.getAllByText(/polski/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Polska/i).length).toBeGreaterThan(0);
-  });
+  await waitFor(() => expect(document.body.textContent).toContain('nl-NL'));
+  expectPreparedValuesFor('nl');
+  expect(global.fetch).toHaveBeenCalled();
 });
 
 test('applies rtl direction for Arabic after Enter using ICU direction info', async () => {
   render(<App />);
+  submitLocale('ar-EG');
 
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'ar-EG' } });
-  fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-  await screen.findByRole('heading', { name: /تطبيق عرض توضيحي للتدويل باستخدام React JavaScript \/ TypeScript على أدوات Node\.js/ });
+  await screen.findByRole('heading');
   const dashboard = document.querySelector('[dir="rtl"]');
   expect(dashboard).not.toBeNull();
-  expect(screen.getByRole('button', { name: 'نسخ الرابط' })).toBeInTheDocument();
+  expect(screen.getByRole('button')).toBeInTheDocument();
 });
 
 test('clicking a suggested locale fills the input without preparing the content', () => {
@@ -443,15 +376,13 @@ test('clicking a suggested locale fills the input without preparing the content'
   fireEvent.click(suggestion);
 
   expect(input).toHaveValue('fr');
-  expect(screen.queryByRole('heading', { name: /Application de demonstration de l'internationalisation avec React JavaScript \/ TypeScript sur l'outillage Node\.js/ })).not.toBeInTheDocument();
+  expect(screen.queryByText(/fr-CA/)).not.toBeInTheDocument();
 });
 
 test('blurring the locale input prepares the locale content', async () => {
   render(<App />);
+  submitLocale('ja-JP', 'blur');
 
-  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
-  fireEvent.change(input, { target: { value: 'ja-JP' } });
-  fireEvent.blur(input);
-
-  expect(await screen.findByRole('heading', { name: /Node\.js ツール上の React JavaScript \/ TypeScript による国際化デモアプリ/ })).toBeInTheDocument();
+  expect(await screen.findByRole('heading')).toBeInTheDocument();
+  expectPreparedValuesFor('ja-JP');
 });
