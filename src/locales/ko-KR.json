@@ -1,0 +1,19 @@
+{
+  "title": "Node.js 도구에서 React JavaScript / TypeScript를 사용하는 국제화 데모 앱",
+  "chooseLocale": "로캘 기반 값을 표시하려면 로캘을 입력하세요:",
+  "searchPlaceholder": "예: ko, ko-KR, en, en-US",
+  "inputLocaleSentence": "사용된 로캘: {inputLocale}",
+  "languageSentence": "언어: {languageName}",
+  "regionSentence": "지역: {regionName}",
+  "icuSectionTitle": "ICU 라이브러리 기반 값",
+  "dateSentence": "날짜 / 시간: {currentDate}",
+  "numberSentence": "숫자(오늘 날짜 {todayDate}): {value}",
+  "percentSentence": "백분율 값: {percentValue}",
+  "firstDayOfWeekSentence": "한 주의 첫째 날: {firstDayOfWeek}",
+  "invalidLocaleMessage": "로캘 \"{inputLocale}\"은(는) 유효한 로캘 태그가 아닙니다. {fallbackLocale} 기준의 대체 값을 표시합니다.",
+  "share": "링크 복사",
+  "copyConfirmation": "링크가 복사되었습니다.",
+  "copyError": "링크를 복사할 수 없습니다.",
+  "pluralSentence": "복수형(ICU 메시지 형식):\n{exampleOne, plural, other {사과 # <accent>개</accent>가 있습니다.}}\n{exampleThree, plural, other {사과 # <accent>개</accent>가 있습니다.}}\n{exampleFive, plural, other {사과 # <accent>개</accent>가 있습니다.}}\n{count, plural, other {사과 # <accent>개</accent>가 있습니다.}}",
+  "unresolvedLocaleMessage": "로캘 \"{inputLocale}\"을(를) 충분히 해석할 수 없어 {fallbackLocale}을(를) 사용합니다."
+}

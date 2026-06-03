@@ -4,6 +4,15 @@ import frCA from './locales/fr-CA.json';
 import arEG from './locales/ar-EG.json';
 import ruRU from './locales/ru-RU.json';
 import trTR from './locales/tr-TR.json';
+import koKR from './locales/ko-KR.json';
+import zhCN from './locales/zh-CN.json';
+import zhTW from './locales/zh-TW.json';
+import zhHK from './locales/zh-HK.json';
+import deDE from './locales/de-DE.json';
+import esES from './locales/es-ES.json';
+import plPL from './locales/pl-PL.json';
+import thTH from './locales/th-TH.json';
+import es419 from './locales/es-419.json';
 import { normalizeLocale, resolveLocale } from './localeResolver';
 
 export const STATIC_LOCALES = ['en', 'en-US', 'ja', 'ja-JP', 'fr', 'fr-CA', 'ar', 'ar-EG', 'ru', 'ru-RU', 'tr', 'tr-TR'];
@@ -15,7 +24,16 @@ export const STATIC_MESSAGES = {
   'fr-CA': frCA,
   'ar-EG': arEG,
   'ru-RU': ruRU,
-  'tr-TR': trTR
+  'tr-TR': trTR,
+  'ko-KR': koKR,
+  'zh-CN': zhCN,
+  'zh-TW': zhTW,
+  'zh-HK': zhHK,
+  'de-DE': deDE,
+  'es-ES': esES,
+  'pl-PL': plPL,
+  'th-TH': thTH,
+  'es-419': es419
 };
 
 export const BASE_MESSAGES = enUS;

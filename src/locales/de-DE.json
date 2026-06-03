@@ -1,0 +1,19 @@
+{
+  "title": "Internationalisierungs-Demo-App mit React JavaScript / TypeScript auf Node.js-Tooling",
+  "chooseLocale": "Geben Sie ein Gebietsschema ein, um gebietsschemabasierte Werte anzuzeigen:",
+  "searchPlaceholder": "z. B. de, de-DE, en, en-US",
+  "inputLocaleSentence": "Verwendetes Gebietsschema: {inputLocale}",
+  "languageSentence": "Sprache: {languageName}",
+  "regionSentence": "Region: {regionName}",
+  "icuSectionTitle": "ICU-Bibliothek basierte Werte",
+  "dateSentence": "Datum / Uhrzeit: {currentDate}",
+  "numberSentence": "Zahl (heutiges Datum {todayDate}): {value}",
+  "percentSentence": "Prozentwert: {percentValue}",
+  "firstDayOfWeekSentence": "Erster Tag der Woche: {firstDayOfWeek}",
+  "invalidLocaleMessage": "Das Gebietsschema „{inputLocale}“ ist kein gueltiges Gebietsschema-Tag. Es werden Ersatzwerte fuer {fallbackLocale} angezeigt.",
+  "share": "Link kopieren",
+  "copyConfirmation": "Link kopiert!",
+  "copyError": "Der Link konnte nicht kopiert werden.",
+  "pluralSentence": "Pluralformen (ICU Message Format):\n{exampleOne, plural, one {Es gibt # <accent>Apfel</accent>.} other {Es gibt # <accent>Aepfel</accent>.}}\n{exampleThree, plural, one {Es gibt # <accent>Apfel</accent>.} other {Es gibt # <accent>Aepfel</accent>.}}\n{exampleFive, plural, one {Es gibt # <accent>Apfel</accent>.} other {Es gibt # <accent>Aepfel</accent>.}}\n{count, plural, one {Es gibt # <accent>Apfel</accent>.} other {Es gibt # <accent>Aepfel</accent>.}}",
+  "unresolvedLocaleMessage": "Das Gebietsschema „{inputLocale}“ konnte nicht gut aufgeloest werden. {fallbackLocale} wird verwendet."
+}

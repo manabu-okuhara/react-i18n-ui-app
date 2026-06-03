@@ -1,0 +1,19 @@
+{
+  "title": "แอปสาธิตการทำให้เป็นสากลด้วย React JavaScript / TypeScript บนเครื่องมือ Node.js",
+  "chooseLocale": "ป้อนโลแคลเพื่อแสดงค่าตามโลแคล:",
+  "searchPlaceholder": "เช่น th, th-TH, en, en-US",
+  "inputLocaleSentence": "โลแคลที่ใช้: {inputLocale}",
+  "languageSentence": "ภาษา: {languageName}",
+  "regionSentence": "ภูมิภาค: {regionName}",
+  "icuSectionTitle": "ค่าที่อ้างอิงจากไลบรารี ICU",
+  "dateSentence": "วันที่ / เวลา: {currentDate}",
+  "numberSentence": "ตัวเลข (วันที่วันนี้ {todayDate}): {value}",
+  "percentSentence": "ค่าเปอร์เซ็นต์: {percentValue}",
+  "firstDayOfWeekSentence": "วันแรกของสัปดาห์: {firstDayOfWeek}",
+  "invalidLocaleMessage": "โลแคล \"{inputLocale}\" ไม่ใช่แท็กโลแคลที่ถูกต้อง กำลังแสดงค่าทดแทนสำหรับ {fallbackLocale}",
+  "share": "คัดลอกลิงก์",
+  "copyConfirmation": "คัดลอกลิงก์แล้ว",
+  "copyError": "ไม่สามารถคัดลอกลิงก์ได้",
+  "pluralSentence": "พหูพจน์ (ICU Message Format):\n{exampleOne, plural, other {มีแอปเปิล # <accent>ลูก</accent>}}\n{exampleThree, plural, other {มีแอปเปิล # <accent>ลูก</accent>}}\n{exampleFive, plural, other {มีแอปเปิล # <accent>ลูก</accent>}}\n{count, plural, other {มีแอปเปิล # <accent>ลูก</accent>}}",
+  "unresolvedLocaleMessage": "ไม่สามารถระบุโลแคล \"{inputLocale}\" ได้ชัดเจน จึงใช้ {fallbackLocale}"
+}

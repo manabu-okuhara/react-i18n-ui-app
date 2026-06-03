@@ -1,0 +1,19 @@
+{
+  "title": "在 Node.js 工具上使用 React JavaScript / TypeScript 的国际化演示应用",
+  "chooseLocale": "请输入区域设置以显示基于区域设置的值：",
+  "searchPlaceholder": "例如：zh、zh-CN、en、en-US",
+  "inputLocaleSentence": "使用的区域设置：{inputLocale}",
+  "languageSentence": "语言：{languageName}",
+  "regionSentence": "地区：{regionName}",
+  "icuSectionTitle": "基于 ICU 库的值",
+  "dateSentence": "日期 / 时间：{currentDate}",
+  "numberSentence": "数字（今天的日期 {todayDate}）：{value}",
+  "percentSentence": "百分比值：{percentValue}",
+  "firstDayOfWeekSentence": "一周的第一天：{firstDayOfWeek}",
+  "invalidLocaleMessage": "区域设置“{inputLocale}”不是有效的区域设置标签。正在显示 {fallbackLocale} 的回退值。",
+  "share": "复制链接",
+  "copyConfirmation": "链接已复制！",
+  "copyError": "无法复制链接。",
+  "pluralSentence": "复数（ICU 消息格式）：\n{exampleOne, plural, other {有 # <accent>个</accent>苹果。}}\n{exampleThree, plural, other {有 # <accent>个</accent>苹果。}}\n{exampleFive, plural, other {有 # <accent>个</accent>苹果。}}\n{count, plural, other {有 # <accent>个</accent>苹果。}}",
+  "unresolvedLocaleMessage": "无法很好地解析区域设置“{inputLocale}”，正在使用 {fallbackLocale}。"
+}

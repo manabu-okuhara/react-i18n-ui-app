@@ -1,0 +1,19 @@
+{
+  "title": "在 Node.js 工具上使用 React JavaScript / TypeScript 的國際化示範應用程式",
+  "chooseLocale": "請輸入語系以顯示基於語系的值：",
+  "searchPlaceholder": "例如：zh、zh-TW、en、en-US",
+  "inputLocaleSentence": "使用的語系：{inputLocale}",
+  "languageSentence": "語言：{languageName}",
+  "regionSentence": "地區：{regionName}",
+  "icuSectionTitle": "以 ICU 函式庫為基礎的值",
+  "dateSentence": "日期 / 時間：{currentDate}",
+  "numberSentence": "數字（今天的日期 {todayDate}）：{value}",
+  "percentSentence": "百分比值：{percentValue}",
+  "firstDayOfWeekSentence": "一週的第一天：{firstDayOfWeek}",
+  "invalidLocaleMessage": "語系「{inputLocale}」不是有效的語系標籤。正在顯示 {fallbackLocale} 的備援值。",
+  "share": "複製連結",
+  "copyConfirmation": "連結已複製！",
+  "copyError": "無法複製連結。",
+  "pluralSentence": "複數（ICU 訊息格式）：\n{exampleOne, plural, other {有 # <accent>個</accent>蘋果。}}\n{exampleThree, plural, other {有 # <accent>個</accent>蘋果。}}\n{exampleFive, plural, other {有 # <accent>個</accent>蘋果。}}\n{count, plural, other {有 # <accent>個</accent>蘋果。}}",
+  "unresolvedLocaleMessage": "無法完整解析語系「{inputLocale}」，因此改用 {fallbackLocale}。"
+}
