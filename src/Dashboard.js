@@ -6,6 +6,8 @@ import {
   formatMessage,
 } from './translateLocaleBundle';
 import { requestLocaleBundle } from './localeBundleClient';
+import { evaluatePreparedBundle } from './localeQa';
+import LocaleQaPanel from './components/LocaleQaPanel';
 
 function getInitialLocale() {
   const params = new URLSearchParams(window.location.search);
@@ -212,6 +214,10 @@ function Dashboard() {
     }
   };
 
+  const qaResult = useMemo(() => (
+    preparedBundle ? evaluatePreparedBundle(preparedBundle) : null
+  ), [preparedBundle]);
+
   const displayContent = preparedBundle
       ? {
         inputLocaleDisplay: renderFormattedMessage(preparedBundle.messages.inputLocaleSentence, preparedBundle.inputLocale, {
@@ -327,6 +333,8 @@ function Dashboard() {
           </p>
         </div>
       )}
+
+      <LocaleQaPanel qaResult={qaResult} bundle={preparedBundle} />
     </div>
   );
 }

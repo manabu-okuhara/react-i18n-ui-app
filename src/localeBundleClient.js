@@ -137,7 +137,9 @@ export async function requestLocaleBundle(inputLocale, customerFallbacks = {}) {
 
     return buildPreparedLocaleBundle({
       inputLocale: trimmedLocale,
-      messages: payload.messages
+      messages: payload.messages,
+      bundleLocale: payload.locale || getLikelyLocale(trimmedLocale),
+      bundleSource: 'generated'
     });
   } catch {
     try {
@@ -145,7 +147,9 @@ export async function requestLocaleBundle(inputLocale, customerFallbacks = {}) {
 
       return buildPreparedLocaleBundle({
         inputLocale: trimmedLocale,
-        messages
+        messages,
+        bundleLocale: getLikelyLocale(trimmedLocale),
+        bundleSource: 'generated'
       });
     } catch {
       return prepareLocaleBundle(trimmedLocale, customerFallbacks);
