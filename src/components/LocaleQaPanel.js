@@ -9,7 +9,7 @@ function LocaleQaPanel({ qaResult, bundle }) {
     <section style={styles.panel}>
       <h2 style={styles.heading}>GenAI-Assisted Locale QA</h2>
       <p style={styles.subtitle}>
-        This review is based on locale metadata analysis, fallback logic, and GenAI-ready evaluation services.
+        This assessment combines rule-based locale validation with AI-assisted quality review.
       </p>
       <p style={styles.line}>Status: {qaResult.status}</p>
       <p style={styles.line}>Bundle Source: {bundle.bundleSource}</p>
@@ -18,6 +18,23 @@ function LocaleQaPanel({ qaResult, bundle }) {
       <p style={styles.line}>Issue Type: {qaResult.triage.category}</p>
       <p style={styles.line}>Recommendation: {qaResult.triage.recommendation}</p>
       <p style={styles.line}>Evaluation Service: {qaResult.serviceMeta?.mode || 'deterministic-local'}</p>
+      {qaResult.aiReview ? (
+        <>
+          <p style={styles.line}>GenAI Review Summary: {qaResult.aiReview.summary}</p>
+          <p style={styles.line}>AI Score: {qaResult.aiReview.score}</p>
+          <p style={styles.line}>AI Confidence: {qaResult.aiReview.confidence}</p>
+          <p style={styles.line}>Recommended Next Step: {qaResult.aiReview.recommendedNextStep}</p>
+          {qaResult.aiReview.findings?.map((finding) => (
+            <p key={finding.id} style={styles.line}>
+              AI Finding ({finding.severity}): {finding.message}
+            </p>
+          ))}
+        </>
+      ) : (
+        <p style={styles.line}>
+          AI review is used when the evaluation service is available; otherwise the app falls back to deterministic checks.
+        </p>
+      )}
       {qaResult.checks.map((check) => (
         <p key={check.id} style={styles.line}>
           {check.label}: {check.status} ({check.detail})

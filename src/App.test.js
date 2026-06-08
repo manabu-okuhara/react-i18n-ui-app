@@ -418,8 +418,10 @@ test('uses backend locale evaluation when the service is available', async () =>
           },
           serviceMeta: {
             mode: 'deterministic-service',
-            genAiReady: true
-          }
+            genAiReady: true,
+            aiUsed: false
+          },
+          aiReview: null
         })
       });
     }
@@ -432,6 +434,55 @@ test('uses backend locale evaluation when the service is available', async () =>
 
   expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
   expectTextContentContains('Evaluation Service: deterministic-service');
+});
+
+test('shows AI review details when the backend evaluation service returns them', async () => {
+  global.fetch.mockImplementation((url) => {
+    if (url === '/api/evaluate-locale-bundle') {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          status: 'warn',
+          checks: [],
+          triage: {
+            category: 'mixed-locale',
+            severity: 'low',
+            recommendation: 'No action needed.'
+          },
+          serviceMeta: {
+            mode: 'ai-service',
+            genAiReady: true,
+            aiUsed: true
+          },
+          aiReview: {
+            summary: 'Labels are coherent, but the mixed locale should be explained.',
+            score: 88,
+            confidence: 'high',
+            recommendedNextStep: 'Keep the current behavior unless you want custom hybrid formatting.',
+            findings: [
+              {
+                id: 'mixed-locale-clarity',
+                severity: 'low',
+                message: 'Consider clarifying why labels and formatted values use different locale families.'
+              }
+            ]
+          }
+        })
+      });
+    }
+
+    return Promise.reject(new Error('offline'));
+  });
+
+  render(<App />);
+  submitLocale('en-JP');
+
+  expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
+  expectTextContentContains('Evaluation Service: ai-service');
+  expectTextContentContains('GenAI Review Summary: Labels are coherent, but the mixed locale should be explained.');
+  expectTextContentContains('AI Score: 88');
+  expectTextContentContains('AI Confidence: high');
+  expectTextContentContains('Recommended Next Step: Keep the current behavior unless you want custom hybrid formatting.');
 });
 
 test('shows mixed-locale QA for en-JP', async () => {
@@ -465,4 +516,5 @@ test('falls back to local QA evaluation when backend evaluation is unavailable',
 
   expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
   expectTextContentContains('Evaluation Service: deterministic-local');
+  expectTextContentContains('AI review is used when the evaluation service is available; otherwise the app falls back to deterministic checks.');
 });
