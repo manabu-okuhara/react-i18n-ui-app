@@ -19,6 +19,12 @@ function expectTextContentContains(value) {
   expect(document.body.textContent).toContain(value);
 }
 
+function expectNoTranslateRequest() {
+  expect(
+    global.fetch.mock.calls.some(([url]) => url === '/api/translate-locale-bundle')
+  ).toBe(false);
+}
+
 function expectPreparedValuesFor(inputLocale) {
   const bundle = buildPreparedLocaleBundle({ inputLocale, messages: BASE_MESSAGES });
   expectTextContentContains(bundle.values.languageName);
@@ -225,7 +231,7 @@ test.each([
 
   expect(await screen.findByRole('heading')).toBeInTheDocument();
   expectPreparedValuesFor(inputLocale);
-  expect(global.fetch).not.toHaveBeenCalled();
+  expectNoTranslateRequest();
 });
 
 test.each([
@@ -239,7 +245,7 @@ test.each([
   expect(await screen.findByRole('heading')).toBeInTheDocument();
   expectPreparedValuesFor(inputLocale);
   expectTextContentContains(inputLocale);
-  expect(global.fetch).not.toHaveBeenCalled();
+  expectNoTranslateRequest();
 });
 
 test('accepts underscore locale input and normalizes it for display', async () => {
@@ -256,7 +262,7 @@ test('reuses English labels for English mixed locales without calling the transl
 
   expect(await screen.findByRole('heading')).toHaveTextContent(/Internationalization Demo App/);
   expectPreparedValuesFor('en-JP');
-  expect(global.fetch).not.toHaveBeenCalled();
+  expectNoTranslateRequest();
 });
 
 test('uses region-based formatting values for mixed locales like tr-JP', () => {
@@ -392,16 +398,47 @@ test('shows built-in locale QA for ko-KR', async () => {
   render(<App />);
   submitLocale('ko-KR');
 
-  expect(await screen.findByText(/Locale QA/i)).toBeInTheDocument();
+  expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
   expectTextContentContains('Bundle Source: built_in');
   expectTextContentContains('Issue Type: built-in-locale');
+});
+
+test('uses backend locale evaluation when the service is available', async () => {
+  global.fetch.mockImplementation((url) => {
+    if (url === '/api/evaluate-locale-bundle') {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          status: 'pass',
+          checks: [],
+          triage: {
+            category: 'built-in-locale',
+            severity: 'low',
+            recommendation: 'No action needed.'
+          },
+          serviceMeta: {
+            mode: 'deterministic-service',
+            genAiReady: true
+          }
+        })
+      });
+    }
+
+    return Promise.reject(new Error('offline'));
+  });
+
+  render(<App />);
+  submitLocale('ko-KR');
+
+  expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
+  expectTextContentContains('Evaluation Service: deterministic-service');
 });
 
 test('shows mixed-locale QA for en-JP', async () => {
   render(<App />);
   submitLocale('en-JP');
 
-  expect(await screen.findByText(/Locale QA/i)).toBeInTheDocument();
+  expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
   expectTextContentContains('Issue Type: mixed-locale');
 });
 
@@ -409,6 +446,23 @@ test('shows invalid-locale QA for bad locale input', async () => {
   render(<App />);
   submitLocale('ukr_UKR');
 
-  expect(await screen.findByText(/Locale QA/i)).toBeInTheDocument();
+  expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
   expectTextContentContains('Issue Type: invalid-locale');
+});
+
+
+test('falls back to local QA evaluation when backend evaluation is unavailable', async () => {
+  global.fetch.mockImplementation((url) => {
+    if (url === '/api/evaluate-locale-bundle') {
+      return Promise.reject(new Error('offline'));
+    }
+
+    return Promise.reject(new Error('offline'));
+  });
+
+  render(<App />);
+  submitLocale('ko-KR');
+
+  expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
+  expectTextContentContains('Evaluation Service: deterministic-local');
 });

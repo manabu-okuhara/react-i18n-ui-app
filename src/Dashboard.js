@@ -6,7 +6,7 @@ import {
   formatMessage,
 } from './translateLocaleBundle';
 import { requestLocaleBundle } from './localeBundleClient';
-import { evaluatePreparedBundle } from './localeQa';
+import { evaluateLocaleBundle } from './localeQaClient';
 import LocaleQaPanel from './components/LocaleQaPanel';
 
 function getInitialLocale() {
@@ -155,6 +155,7 @@ function Dashboard() {
   const [searchTerm, setSearchTerm] = useState(initialLocale);
   const [showDropdown, setShowDropdown] = useState(false);
   const [preparedBundle, setPreparedBundle] = useState(null);
+  const [qaResult, setQaResult] = useState(null);
   const [isPreparing, setIsPreparing] = useState(false);
   const [lastSubmittedLocale, setLastSubmittedLocale] = useState('');
 
@@ -196,6 +197,7 @@ function Dashboard() {
     setShowDropdown(false);
     setIsPreparing(true);
     setLastSubmittedLocale(trimmedLocale);
+    setQaResult(null);
 
     try {
       const bundle = await requestLocaleBundle(trimmedLocale, customerFallbacks);
@@ -214,9 +216,24 @@ function Dashboard() {
     }
   };
 
-  const qaResult = useMemo(() => (
-    preparedBundle ? evaluatePreparedBundle(preparedBundle) : null
-  ), [preparedBundle]);
+  useEffect(() => {
+    let isActive = true;
+
+    if (!preparedBundle) {
+      setQaResult(null);
+      return undefined;
+    }
+
+    evaluateLocaleBundle(preparedBundle).then((result) => {
+      if (isActive) {
+        setQaResult(result);
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [preparedBundle]);
 
   const displayContent = preparedBundle
       ? {

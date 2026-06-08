@@ -1,4 +1,4 @@
-export function evaluatePreparedBundle(bundle) {
+export function evaluatePreparedBundle(bundle, serviceMeta = { mode: 'deterministic-local', genAiReady: true }) {
   const checks = [];
 
   checks.push({
@@ -44,7 +44,8 @@ export function evaluatePreparedBundle(bundle) {
   return {
     status,
     checks,
-    triage: buildTriage(bundle)
+    triage: buildTriage(bundle),
+    serviceMeta
   };
 }
 
