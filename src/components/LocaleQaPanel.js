@@ -1,5 +1,25 @@
 import React from 'react';
 
+function getAiAvailabilityMessage(serviceMeta = {}) {
+  if (serviceMeta.mode === 'ai-service') {
+    return null;
+  }
+
+  if (serviceMeta.mode === 'deterministic-local') {
+    return 'AI review is temporarily unavailable because the evaluation service could not be reached, so the app is using deterministic checks.';
+  }
+
+  if (serviceMeta.aiUnavailableReason === 'service_limits') {
+    return 'AI review is temporarily unavailable because the AI service is rate-limited or has no available quota, so the app is using deterministic checks.';
+  }
+
+  if (serviceMeta.aiUnavailableReason === 'auth_or_config') {
+    return 'AI review is temporarily unavailable because the AI service is not configured correctly, so the app is using deterministic checks.';
+  }
+
+  return 'AI review is temporarily unavailable, so the app is using deterministic checks.';
+}
+
 function LocaleQaPanel({ qaResult, bundle }) {
   if (!qaResult || !bundle) {
     return null;
@@ -32,7 +52,7 @@ function LocaleQaPanel({ qaResult, bundle }) {
         </>
       ) : (
         <p style={styles.line}>
-          AI review is used when the evaluation service is available; otherwise the app falls back to deterministic checks.
+          {getAiAvailabilityMessage(qaResult.serviceMeta)}
         </p>
       )}
       {qaResult.checks.map((check) => (

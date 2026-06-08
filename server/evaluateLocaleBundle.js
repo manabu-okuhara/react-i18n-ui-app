@@ -52,6 +52,21 @@ function evaluatePreparedBundle(bundle, serviceMeta = { mode: 'deterministic-ser
   };
 }
 
+
+function classifyAiFallbackReason(error) {
+  const message = error instanceof Error ? error.message : String(error || '');
+
+  if (message.includes('status 429')) {
+    return 'service_limits';
+  }
+
+  if (message.includes('status 401') || message.includes('status 403')) {
+    return 'auth_or_config';
+  }
+
+  return 'service_unavailable';
+}
+
 function buildTriage(bundle) {
   if (bundle.fallbackReason === 'invalid_locale') {
     return {
@@ -100,10 +115,20 @@ async function handleEvaluateLocaleBundleRequest(req, res) {
       genAiReady: true,
       aiUsed: false
     });
-    const aiReview = await reviewLocaleBundleWithAi(bundle).catch(() => null);
+    let aiFallbackReason = null;
+    const aiReview = await reviewLocaleBundleWithAi(bundle).catch((error) => {
+      aiFallbackReason = classifyAiFallbackReason(error);
+      return null;
+    });
 
     if (!aiReview) {
-      res.status(200).json(deterministicPayload);
+      res.status(200).json({
+        ...deterministicPayload,
+        serviceMeta: {
+          ...deterministicPayload.serviceMeta,
+          aiUnavailableReason: aiFallbackReason
+        }
+      });
       return;
     }
 
