@@ -102,6 +102,7 @@ async function handleEvaluateLocaleBundleRequest(req, res) {
     });
     const aiReview = await reviewLocaleBundleWithAi(bundle).catch(() => null);
 
+
     if (!aiReview) {
       res.status(200).json(deterministicPayload);
       return;
