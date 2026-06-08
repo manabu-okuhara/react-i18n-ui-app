@@ -1,4 +1,6 @@
-function evaluatePreparedBundle(bundle, serviceMeta = { mode: 'deterministic-service', genAiReady: true }) {
+const { reviewLocaleBundleWithAi } = require('./aiLocaleReviewer');
+
+function evaluatePreparedBundle(bundle, serviceMeta = { mode: 'deterministic-service', genAiReady: true, aiUsed: false }) {
   const checks = [];
 
   checks.push({
@@ -45,7 +47,8 @@ function evaluatePreparedBundle(bundle, serviceMeta = { mode: 'deterministic-ser
     status,
     checks,
     triage: buildTriage(bundle),
-    serviceMeta
+    serviceMeta,
+    aiReview: null
   };
 }
 
@@ -92,11 +95,27 @@ function buildTriage(bundle) {
 async function handleEvaluateLocaleBundleRequest(req, res) {
   try {
     const bundle = req.body || {};
-    const payload = evaluatePreparedBundle(bundle, {
+    const deterministicPayload = evaluatePreparedBundle(bundle, {
       mode: 'deterministic-service',
-      genAiReady: true
+      genAiReady: true,
+      aiUsed: false
     });
-    res.status(200).json(payload);
+    const aiReview = await reviewLocaleBundleWithAi(bundle).catch(() => null);
+
+    if (!aiReview) {
+      res.status(200).json(deterministicPayload);
+      return;
+    }
+
+    res.status(200).json({
+      ...deterministicPayload,
+      serviceMeta: {
+        mode: 'ai-service',
+        genAiReady: true,
+        aiUsed: true
+      },
+      aiReview
+    });
   } catch (error) {
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Unable to evaluate locale bundle'
