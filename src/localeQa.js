@@ -1,4 +1,4 @@
-export function evaluatePreparedBundle(bundle, serviceMeta = { mode: 'deterministic-local', genAiReady: true, aiUsed: false }) {
+export function evaluatePreparedBundle(bundle, serviceMeta = { mode: 'deterministic-local', genAiReady: true, aiUsed: false, aiUnavailableReason: 'service_unreachable' }) {
   const checks = [];
 
   checks.push({

@@ -419,7 +419,8 @@ test('uses backend locale evaluation when the service is available', async () =>
           serviceMeta: {
             mode: 'deterministic-service',
             genAiReady: true,
-            aiUsed: false
+            aiUsed: false,
+            aiUnavailableReason: 'service_limits'
           },
           aiReview: null
         })
@@ -434,6 +435,7 @@ test('uses backend locale evaluation when the service is available', async () =>
 
   expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
   expectTextContentContains('Evaluation Service: deterministic-service');
+  expectTextContentContains('AI review is temporarily unavailable because the AI service is rate-limited or has no available quota, so the app is using deterministic checks.');
 });
 
 test('shows AI review details when the backend evaluation service returns them', async () => {
@@ -516,5 +518,5 @@ test('falls back to local QA evaluation when backend evaluation is unavailable',
 
   expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
   expectTextContentContains('Evaluation Service: deterministic-local');
-  expectTextContentContains('AI review is used when the evaluation service is available; otherwise the app falls back to deterministic checks.');
+  expectTextContentContains('AI review is temporarily unavailable because the evaluation service could not be reached, so the app is using deterministic checks.');
 });
