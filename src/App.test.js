@@ -386,3 +386,29 @@ test('blurring the locale input prepares the locale content', async () => {
   expect(await screen.findByRole('heading')).toBeInTheDocument();
   expectPreparedValuesFor('ja-JP');
 });
+
+
+test('shows built-in locale QA for ko-KR', async () => {
+  render(<App />);
+  submitLocale('ko-KR');
+
+  expect(await screen.findByText(/Locale QA/i)).toBeInTheDocument();
+  expectTextContentContains('Bundle Source: built_in');
+  expectTextContentContains('Issue Type: built-in-locale');
+});
+
+test('shows mixed-locale QA for en-JP', async () => {
+  render(<App />);
+  submitLocale('en-JP');
+
+  expect(await screen.findByText(/Locale QA/i)).toBeInTheDocument();
+  expectTextContentContains('Issue Type: mixed-locale');
+});
+
+test('shows invalid-locale QA for bad locale input', async () => {
+  render(<App />);
+  submitLocale('ukr_UKR');
+
+  expect(await screen.findByText(/Locale QA/i)).toBeInTheDocument();
+  expectTextContentContains('Issue Type: invalid-locale');
+});

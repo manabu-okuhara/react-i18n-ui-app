@@ -15,7 +15,7 @@ import thTH from './locales/th-TH.json';
 import es419 from './locales/es-419.json';
 import { normalizeLocale, resolveLocale } from './localeResolver';
 
-export const STATIC_LOCALES = ['en', 'en-US', 'ja', 'ja-JP', 'fr', 'fr-CA', 'ar', 'ar-EG', 'ru', 'ru-RU', 'tr', 'tr-TR'];
+export const STATIC_LOCALES = ['en', 'en-US', 'ja', 'ja-JP', 'fr', 'fr-CA', 'ar', 'ar-EG', 'ru', 'ru-RU', 'tr', 'tr-TR', 'ko', 'ko-KR', 'zh', 'zh-CN', 'zh-TW', 'zh-HK', 'de', 'de-DE', 'es', 'es-ES', 'es-419', 'pl', 'pl-PL', 'th', 'th-TH'];
 export const AVAILABLE_LOCALES = STATIC_LOCALES;
 
 export const STATIC_MESSAGES = {
@@ -78,6 +78,10 @@ function getLikelyLocaleForLanguage(locale) {
   } catch {
     return getLikelyLocale(locale);
   }
+}
+
+export function getLocaleLanguage(locale = '') {
+  return locale.split('-')[0].toLowerCase();
 }
 
 function getRegionalFormattingLocale(locale) {
@@ -232,6 +236,8 @@ function getFirstDayOfWeek(regionLocale) {
 export function buildPreparedLocaleBundle({
   inputLocale,
   messages,
+  bundleLocale,
+  bundleSource,
   now = new Date()
 }) {
   const requestedLocale = normalizeLocale(inputLocale);
@@ -239,11 +245,21 @@ export function buildPreparedLocaleBundle({
   const localeUsed = isValidLocaleForIntl(localeUsedCandidate)
     ? localeUsedCandidate
     : 'en-US';
+  const resolvedBundleLocale = bundleLocale || localeUsed;
+  const resolvedBundleSource = bundleSource || 'generated';
   const {
     formattingLocale,
     wasFallback: didFallbackFormatting
   } = getRegionalFormattingLocale(localeUsed);
   const mergedMessages = { ...BASE_MESSAGES, ...messages };
+  const fallbackReason = localeUsedCandidate !== localeUsed
+    ? 'invalid_locale'
+    : didFallbackFormatting
+      ? 'unresolved_region'
+      : resolvedBundleSource === 'fallback_english'
+        ? 'unsupported_locale'
+        : null;
+  const labelLanguage = getLocaleLanguage(resolvedBundleLocale || localeUsed);
   const year = now.getFullYear() % 100;
   const rawValue =
     (now.getMonth() + 1) * 10000 +
@@ -257,7 +273,14 @@ export function buildPreparedLocaleBundle({
       formattingLocale === localeUsed || localeUsed === getLikelyLocaleForLanguage(localeUsed)
         ? localeUsed
         : `${localeUsed} (${formattingLocale})`,
+    localeUsed,
+    bundleLocale: resolvedBundleLocale,
     formattingLocale,
+    labelLanguage,
+    bundleSource: resolvedBundleSource,
+    usedFallback: Boolean(fallbackReason),
+    fallbackReason,
+    isMixedLocale: labelLanguage !== getLocaleLanguage(formattingLocale),
     messages: mergedMessages,
     isRTL: isRTLLocale(localeUsed),
     warningMessage: localeUsedCandidate !== localeUsed
@@ -303,7 +326,7 @@ export function buildPreparedLocaleBundle({
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
       }).format(0.8),
-      firstDayOfWeek: getFirstDayOfWeek(formattingLocale, localeUsed),
+      firstDayOfWeek: getFirstDayOfWeek(formattingLocale),
       pluralMessage: formatMessage(
         mergedMessages.pluralSentence,
         {
@@ -319,11 +342,16 @@ export function buildPreparedLocaleBundle({
 }
 
 export function prepareLocaleBundle(inputLocale, customerFallbacks = {}, now = new Date()) {
-  const { messages } = getStaticMessagesForLocale(inputLocale, customerFallbacks);
+  const { likelyLocale, bundleLocale, messages } = getStaticMessagesForLocale(inputLocale, customerFallbacks);
+  const bundleSource = bundleLocale === 'en-US' && getLocaleLanguage(likelyLocale) !== 'en'
+    ? 'fallback_english'
+    : 'built_in';
 
   return buildPreparedLocaleBundle({
     inputLocale,
     messages,
+    bundleLocale,
+    bundleSource,
     now
   });
 }
