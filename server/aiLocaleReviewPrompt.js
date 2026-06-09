@@ -38,6 +38,11 @@ function createAiLocaleReviewRequest(bundle) {
     'You are reviewing a localized UI result for an internationalization demo application.',
     'Evaluate the output rather than rewriting it.',
     'Focus on translation quality, terminology consistency, placeholder safety, plural clarity, and whether labels and formatted values feel coherent together.',
+    'Keep the response concise and UI-friendly.',
+    'Use a score from 0 to 100, where 100 is excellent.',
+    'Limit the summary to at most 2 short sentences.',
+    'Limit findings to at most 3 items and keep each message to one short sentence.',
+    'Keep the recommended next step to one short sentence.',
     'Return JSON only that matches the requested schema.',
     JSON.stringify(createAiLocaleReviewInput(bundle), null, 2)
   ].join('\n\n');
