@@ -65,10 +65,12 @@ jobs:
       - name: Collect review message
         id: collect_message
         run: |
+          DELIM="CODEX_REVIEW_EOF_$(date +%s)"
+
           {
-            echo "final_message<<EOF"
+            echo "final_message<<$DELIM"
             cat codex-i18n-review.md
-            echo "EOF"
+            printf '\n%s\n' "$DELIM"
           } >> "$GITHUB_OUTPUT"
 
       - name: Upload Codex review artifact
