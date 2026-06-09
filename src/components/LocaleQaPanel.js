@@ -72,15 +72,17 @@ const styles = {
   },
   heading: {
     margin: '0 0 12px',
-    fontSize: '1.1rem'
+    fontSize: '1.2rem'
   },
   subtitle: {
     margin: '0 0 12px',
+    fontSize: '1.2rem',
     lineHeight: 1.5,
     color: '#444'
   },
   line: {
     margin: '0 0 8px',
+    fontSize: '1.2rem',
     lineHeight: 1.5
   }
 };
