@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import customerLocaleConfig from './customerLocaleConfig.json';
 import {
   AVAILABLE_LOCALES,
@@ -149,6 +149,125 @@ function renderPluralMessage(message) {
   return segments;
 }
 
+
+
+const VOICE_REGION_ALIASES = {
+  'united states': 'US',
+  'us': 'US',
+  'usa': 'US',
+  'japan': 'JP',
+  'turkey': 'TR',
+  'turkiye': 'TR',
+  'canada': 'CA',
+  'egypt': 'EG',
+  'russia': 'RU',
+  'south korea': 'KR',
+  'korea': 'KR',
+  'china': 'CN',
+  'taiwan': 'TW',
+  'hong kong': 'HK',
+  'spain': 'ES',
+  'poland': 'PL',
+  'thailand': 'TH',
+  'france': 'FR'
+};
+
+function normalizeVoiceLookup(value) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[_-]+/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildVoiceLocaleMaps() {
+  const aliases = new Map();
+  const languageAliases = new Map();
+  const regionAliases = new Map();
+  const languageNames = new Intl.DisplayNames(['en-US'], { type: 'language' });
+  const regionNames = new Intl.DisplayNames(['en-US'], { type: 'region' });
+
+  AVAILABLE_LOCALES.forEach((localeCode) => {
+    const [language, region] = localeCode.split('-');
+    aliases.set(normalizeVoiceLookup(localeCode), localeCode);
+
+    const languageName = languageNames.of(language);
+    if (languageName) {
+      languageAliases.set(normalizeVoiceLookup(languageName), language);
+      aliases.set(normalizeVoiceLookup(languageName), region ? `${language}-${region}` : language);
+    }
+
+    if (region) {
+      const regionName = regionNames.of(region);
+      if (regionName) {
+        regionAliases.set(normalizeVoiceLookup(regionName), region);
+
+        if (languageName) {
+          aliases.set(normalizeVoiceLookup(`${languageName} ${regionName}`), `${language}-${region}`);
+          aliases.set(normalizeVoiceLookup(`${regionName} ${languageName}`), `${language}-${region}`);
+        }
+      }
+    }
+  });
+
+  Object.entries(VOICE_REGION_ALIASES).forEach(([label, regionCode]) => {
+    regionAliases.set(normalizeVoiceLookup(label), regionCode);
+  });
+
+  return {
+    aliases,
+    languageAliases,
+    regionAliases
+  };
+}
+
+
+const VOICE_UI_MESSAGES = {
+  unsupported: 'Voice input is not available in this browser.',
+  listening: 'Listening for a locale...',
+  unavailable: 'Voice input was unavailable. Please try again or type the locale.',
+  recognized: (locale) => `Voice locale recognized: ${locale}`
+};
+
+function resolveSpokenLocale(transcript, voiceLocaleMaps) {
+  const normalizedTranscript = normalizeVoiceLookup(transcript);
+  const { aliases, languageAliases, regionAliases } = voiceLocaleMaps;
+
+  if (aliases.has(normalizedTranscript)) {
+    return aliases.get(normalizedTranscript);
+  }
+
+  const regionEntries = Array.from(regionAliases.entries()).sort((a, b) => b[0].length - a[0].length);
+
+  for (const [regionLabel, regionCode] of regionEntries) {
+    if (normalizedTranscript.startsWith(`${regionLabel} `)) {
+      const languageLabel = normalizedTranscript.slice(regionLabel.length + 1).trim();
+      if (languageAliases.has(languageLabel)) {
+        return `${languageAliases.get(languageLabel)}-${regionCode}`;
+      }
+    }
+
+    if (normalizedTranscript.endsWith(` ${regionLabel}`)) {
+      const languageLabel = normalizedTranscript.slice(0, -regionLabel.length - 1).trim();
+      if (languageAliases.has(languageLabel)) {
+        return `${languageAliases.get(languageLabel)}-${regionCode}`;
+      }
+    }
+  }
+
+  if (languageAliases.has(normalizedTranscript)) {
+    return languageAliases.get(normalizedTranscript);
+  }
+
+  if (/^[a-z]{2,3}(?:\s+[a-z0-9]{2,4})?$/i.test(normalizedTranscript)) {
+    return normalizedTranscript.replace(/\s+/g, '-');
+  }
+
+  return transcript.trim().replace(/\s+/g, '-');
+}
+
 function Dashboard() {
   const initialLocale = useMemo(() => getInitialLocale(), []);
   const [locale, setLocale] = useState(initialLocale);
@@ -158,6 +277,9 @@ function Dashboard() {
   const [qaResult, setQaResult] = useState(null);
   const [isPreparing, setIsPreparing] = useState(false);
   const [lastSubmittedLocale, setLastSubmittedLocale] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [voiceMessage, setVoiceMessage] = useState('');
+  const recognitionRef = useRef(null);
 
   const customerFallbacks = useMemo(
     () => customerLocaleConfig.localeFallbacks || {},
@@ -172,6 +294,12 @@ function Dashboard() {
     url.searchParams.set('hl', locale);
     window.history.replaceState({}, '', url);
   }, [locale]);
+
+  const voiceLocaleMaps = useMemo(() => buildVoiceLocaleMaps(), []);
+  const speechRecognitionCtor = typeof window !== 'undefined'
+    ? (window.SpeechRecognition || window.webkitSpeechRecognition || null)
+    : null;
+  const isVoiceSupported = Boolean(speechRecognitionCtor);
 
   const suggestions = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -205,6 +333,56 @@ function Dashboard() {
     } finally {
       setIsPreparing(false);
     }
+  };
+
+
+  useEffect(() => () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop?.();
+      recognitionRef.current = null;
+    }
+  }, []);
+
+  const startVoiceInput = () => {
+    if (!speechRecognitionCtor) {
+      setVoiceMessage(VOICE_UI_MESSAGES.unsupported);
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop?.();
+      return;
+    }
+
+    const recognition = new speechRecognitionCtor();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setVoiceMessage(VOICE_UI_MESSAGES.listening);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results?.[0]?.[0]?.transcript || '';
+      const resolvedLocale = resolveSpokenLocale(transcript, voiceLocaleMaps);
+      setSearchTerm(resolvedLocale);
+      setVoiceMessage(VOICE_UI_MESSAGES.recognized(resolvedLocale));
+      submitLocale(resolvedLocale);
+    };
+
+    recognition.onerror = () => {
+      setVoiceMessage(VOICE_UI_MESSAGES.unavailable);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
   };
 
   const copyLink = async () => {
@@ -286,27 +464,43 @@ function Dashboard() {
 
       <div style={styles.searchContainer}>
         <label htmlFor="locale-input" style={styles.label}>{activeMessages.chooseLocale}</label>
-        <input
-          id="locale-input"
-          type="text"
-          placeholder={activeMessages.searchPlaceholder}
-          value={searchTerm}
-          onFocus={() => setShowDropdown(true)}
-          onChange={(event) => {
-            setSearchTerm(event.target.value);
-            setShowDropdown(true);
-          }}
-          onBlur={() => {
-            submitLocale(searchTerm);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault();
+        <div style={styles.inputRow}>
+          <input
+            id="locale-input"
+            type="text"
+            placeholder={activeMessages.searchPlaceholder}
+            value={searchTerm}
+            onFocus={() => setShowDropdown(true)}
+            onChange={(event) => {
+              setSearchTerm(event.target.value);
+              setShowDropdown(true);
+            }}
+            onBlur={() => {
               submitLocale(searchTerm);
-            }
-          }}
-          style={styles.input}
-        />
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                submitLocale(searchTerm);
+              }
+            }}
+            style={styles.input}
+          />
+          {isVoiceSupported ? (
+            <button
+              type="button"
+              onClick={startVoiceInput}
+              style={styles.voiceButton}
+              aria-label="Use voice locale input"
+              title="Use voice locale input"
+            >
+              {isListening ? 'Listening...' : 'Voice'}
+            </button>
+          ) : null}
+        </div>
+        {voiceMessage ? (
+          <p style={styles.voiceMessage}>{voiceMessage}</p>
+        ) : null}
 
         {showDropdown && suggestions.length > 0 && (
           <div style={styles.dropdown}>
@@ -393,6 +587,11 @@ const styles = {
   searchContainer: {
     marginBottom: '20px'
   },
+  inputRow: {
+    display: 'flex',
+    gap: '10px',
+    alignItems: 'stretch'
+  },
   input: {
     width: '100%',
     padding: '12px',
@@ -403,7 +602,24 @@ const styles = {
     color: 'black',
     textAlign: 'inherit',
     direction: 'inherit',
-    fontSize: '21px'
+    fontSize: '21px',
+    flex: 1
+  },
+  voiceButton: {
+    border: 'none',
+    borderRadius: '8px',
+    padding: '0 16px',
+    backgroundColor: '#0f766e',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '18px',
+    minWidth: '110px'
+  },
+  voiceMessage: {
+    margin: '10px 0 0',
+    fontSize: '16px',
+    lineHeight: 1.4,
+    color: '#444'
   },
   dropdown: {
     display: 'grid',
