@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 import { BASE_MESSAGES, buildPreparedLocaleBundle } from './translateLocaleBundle';
 
@@ -53,6 +53,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  delete window.SpeechRecognition;
+  delete window.webkitSpeechRecognition;
   jest.resetAllMocks();
 });
 
@@ -391,6 +393,42 @@ test('blurring the locale input prepares the locale content', async () => {
 
   expect(await screen.findByRole('heading')).toBeInTheDocument();
   expectPreparedValuesFor('ja-JP');
+});
+
+test('accepts locale input through browser speech recognition', async () => {
+  let recognition;
+
+  class MockSpeechRecognition {
+    constructor() {
+      recognition = this;
+    }
+
+    start() {
+      this.onstart?.();
+    }
+
+    stop() {}
+  }
+
+  Object.defineProperty(window, 'webkitSpeechRecognition', {
+    configurable: true,
+    value: MockSpeechRecognition
+  });
+
+  render(<App />);
+
+  fireEvent.click(screen.getByRole('button', { name: /Use voice locale input/i }));
+  expectTextContentContains('Listening for a locale...');
+
+  await act(async () => {
+    recognition.onresult({
+      results: [[{ transcript: 'Japanese Turkey' }]]
+    });
+    recognition.onend?.();
+  });
+
+  await waitFor(() => expect(screen.getByDisplayValue('ja-TR')).toBeInTheDocument());
+  expectPreparedValuesFor('ja-TR');
 });
 
 
