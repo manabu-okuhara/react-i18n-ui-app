@@ -269,6 +269,7 @@ export function buildPreparedLocaleBundle({
 
   return {
     inputLocale: localeUsed,
+    generatedAt: now.toISOString(),
     inputLocaleDisplay:
       formattingLocale === localeUsed || localeUsed === getLikelyLocaleForLanguage(localeUsed)
         ? localeUsed

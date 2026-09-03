@@ -431,6 +431,32 @@ test('accepts locale input through browser speech recognition', async () => {
   expectPreparedValuesFor('ja-TR');
 });
 
+test('shows a side-by-side locale comparison card with en-US baseline values', async () => {
+  render(<App />);
+  submitLocale('ja-JP');
+
+  expect(await screen.findByRole('heading', { name: /Locale Comparison/i })).toBeInTheDocument();
+  expectTextContentContains('Highlighted values differ from the en-US baseline.');
+  expectTextContentContains('Selected Locale: ja-JP');
+  expectTextContentContains('en-US Baseline');
+  expect(screen.getByTestId('comparison-cell-language-selected')).toHaveTextContent('日本語');
+  expect(screen.getByTestId('comparison-cell-language-baseline')).toHaveTextContent('English');
+});
+
+test('uses background colors to distinguish different and matching comparison values', async () => {
+  render(<App />);
+  submitLocale('ja-JP');
+
+  await screen.findByRole('heading', { name: /Locale Comparison/i });
+
+  expect(screen.getByTestId('comparison-cell-language-selected')).toHaveStyle({
+    backgroundColor: '#fff4d6'
+  });
+  expect(screen.getByTestId('comparison-cell-number-selected')).toHaveStyle({
+    backgroundColor: '#f8f9fb'
+  });
+});
+
 
 test('shows built-in locale QA for ko-KR', async () => {
   render(<App />);

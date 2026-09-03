@@ -3,6 +3,7 @@ import customerLocaleConfig from './customerLocaleConfig.json';
 import {
   AVAILABLE_LOCALES,
   BASE_MESSAGES,
+  buildPreparedLocaleBundle,
   formatMessage,
 } from './translateLocaleBundle';
 import { requestLocaleBundle } from './localeBundleClient';
@@ -231,6 +232,69 @@ const VOICE_UI_MESSAGES = {
   recognized: (locale) => `Voice locale recognized: ${locale}`
 };
 
+
+const COMPARISON_UI_MESSAGES = {
+  title: 'Locale Comparison',
+  note: 'Highlighted values differ from the en-US baseline.',
+  selectedLabel: 'Selected Locale',
+  baselineLabel: 'en-US Baseline'
+};
+
+function getComparisonRows(preparedBundle, comparisonBundle) {
+  if (!preparedBundle || !comparisonBundle) {
+    return [];
+  }
+
+  return [
+    {
+      id: 'language',
+      label: 'Language',
+      selectedValue: preparedBundle.values.languageName,
+      baselineValue: comparisonBundle.values.languageName
+    },
+    {
+      id: 'region',
+      label: 'Region',
+      selectedValue: preparedBundle.values.regionName,
+      baselineValue: comparisonBundle.values.regionName
+    },
+    {
+      id: 'date-time',
+      label: 'Date / Time',
+      selectedValue: preparedBundle.values.currentDate,
+      baselineValue: comparisonBundle.values.currentDate
+    },
+    {
+      id: 'number',
+      label: 'Number',
+      selectedValue: preparedBundle.values.formattedNumber,
+      baselineValue: comparisonBundle.values.formattedNumber
+    },
+    {
+      id: 'percent',
+      label: 'Percent',
+      selectedValue: preparedBundle.values.percentValue,
+      baselineValue: comparisonBundle.values.percentValue
+    },
+    {
+      id: 'first-day',
+      label: 'First Day of Week',
+      selectedValue: preparedBundle.values.firstDayOfWeek,
+      baselineValue: comparisonBundle.values.firstDayOfWeek
+    },
+    {
+      id: 'plurals',
+      label: 'Plural Examples',
+      selectedValue: preparedBundle.values.pluralMessage,
+      baselineValue: comparisonBundle.values.pluralMessage,
+      multiline: true
+    }
+  ].map((row) => ({
+    ...row,
+    differs: row.selectedValue !== row.baselineValue
+  }));
+}
+
 function resolveSpokenLocale(transcript, voiceLocaleMaps) {
   const normalizedTranscript = normalizeVoiceLookup(transcript);
   const { aliases, languageAliases, regionAliases } = voiceLocaleMaps;
@@ -413,6 +477,25 @@ function Dashboard() {
     };
   }, [preparedBundle]);
 
+  const comparisonBundle = useMemo(() => {
+    if (!preparedBundle) {
+      return null;
+    }
+
+    return buildPreparedLocaleBundle({
+      inputLocale: 'en-US',
+      messages: BASE_MESSAGES,
+      bundleLocale: 'en-US',
+      bundleSource: 'built_in',
+      now: new Date(preparedBundle.generatedAt)
+    });
+  }, [preparedBundle]);
+
+  const comparisonRows = useMemo(
+    () => getComparisonRows(preparedBundle, comparisonBundle),
+    [preparedBundle, comparisonBundle]
+  );
+
   const displayContent = preparedBundle
       ? {
         inputLocaleDisplay: renderFormattedMessage(preparedBundle.messages.inputLocaleSentence, preparedBundle.inputLocale, {
@@ -527,22 +610,70 @@ function Dashboard() {
       )}
 
       {displayContent && (
-        <div style={styles.result}>
-          {displayContent.warningMessage ? (
-            <p style={styles.warningText}>{displayContent.warningMessage}</p>
+        <>
+          <div style={styles.result}>
+            {displayContent.warningMessage ? (
+              <p style={styles.warningText}>{displayContent.warningMessage}</p>
+            ) : null}
+            <p style={styles.text}>{displayContent.inputLocaleDisplay}</p>
+            <p style={styles.text}>{displayContent.languageDisplay}</p>
+            <p style={styles.text}>{displayContent.regionDisplay}</p>
+            <p style={styles.sectionHeading}>{displayContent.icuSectionTitle}</p>
+            <p style={styles.text}>{displayContent.dateDisplay}</p>
+            <p style={styles.text}>{displayContent.numberDisplay}</p>
+            <p style={styles.text}>{displayContent.percentDisplay}</p>
+            <p style={styles.text}>{displayContent.firstDayOfWeekDisplay}</p>
+            <p style={{ ...styles.text, ...styles.pluralBlock }}>
+              {renderPluralMessage(displayContent.pluralDisplay)}
+            </p>
+          </div>
+
+          {comparisonBundle ? (
+            <section style={styles.comparisonCard} aria-label="Locale Comparison">
+              <h2 style={styles.comparisonHeading}>{COMPARISON_UI_MESSAGES.title}</h2>
+              <p style={styles.comparisonNote}>{COMPARISON_UI_MESSAGES.note}</p>
+              <div style={styles.comparisonHeaderRow}>
+                <div />
+                <div style={styles.comparisonColumnHeading}>
+                  {COMPARISON_UI_MESSAGES.selectedLabel}: {preparedBundle.inputLocaleDisplay}
+                </div>
+                <div style={styles.comparisonColumnHeading}>
+                  {COMPARISON_UI_MESSAGES.baselineLabel}
+                </div>
+              </div>
+              <div style={styles.comparisonGrid}>
+                {comparisonRows.map((row) => {
+                  const cellStyle = row.differs ? styles.comparisonDiffCell : styles.comparisonSameCell;
+                  return (
+                    <React.Fragment key={row.id}>
+                      <div style={styles.comparisonLabelCell}>{row.label}</div>
+                      <div
+                        data-testid={`comparison-cell-${row.id}-selected`}
+                        style={{
+                          ...styles.comparisonValueCell,
+                          ...cellStyle,
+                          ...(row.multiline ? styles.comparisonMultilineValue : null)
+                        }}
+                      >
+                        {row.selectedValue}
+                      </div>
+                      <div
+                        data-testid={`comparison-cell-${row.id}-baseline`}
+                        style={{
+                          ...styles.comparisonValueCell,
+                          ...cellStyle,
+                          ...(row.multiline ? styles.comparisonMultilineValue : null)
+                        }}
+                      >
+                        {row.baselineValue}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </section>
           ) : null}
-          <p style={styles.text}>{displayContent.inputLocaleDisplay}</p>
-          <p style={styles.text}>{displayContent.languageDisplay}</p>
-          <p style={styles.text}>{displayContent.regionDisplay}</p>
-          <p style={styles.sectionHeading}>{displayContent.icuSectionTitle}</p>
-          <p style={styles.text}>{displayContent.dateDisplay}</p>
-          <p style={styles.text}>{displayContent.numberDisplay}</p>
-          <p style={styles.text}>{displayContent.percentDisplay}</p>
-          <p style={styles.text}>{displayContent.firstDayOfWeekDisplay}</p>
-          <p style={{ ...styles.text, ...styles.pluralBlock }}>
-            {renderPluralMessage(displayContent.pluralDisplay)}
-          </p>
-        </div>
+        </>
       )}
 
       <LocaleQaPanel qaResult={qaResult} bundle={preparedBundle} />
@@ -554,7 +685,7 @@ const styles = {
   container: {
     padding: '25px',
     fontFamily: 'sans-serif',
-    maxWidth: '630px',
+    maxWidth: '960px',
     margin: '40px auto',
     border: '1px solid #ddd',
     borderRadius: '16px',
@@ -667,6 +798,72 @@ const styles = {
   result: {
     display: 'grid',
     gap: '12px'
+  },
+  comparisonCard: {
+    marginTop: '24px',
+    padding: '18px',
+    border: '1px solid #e5e7eb',
+    borderRadius: '14px',
+    backgroundColor: '#ffffff',
+    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.06)'
+  },
+  comparisonHeading: {
+    margin: 0,
+    fontSize: '1.2rem',
+    lineHeight: 1.3
+  },
+  comparisonNote: {
+    margin: '8px 0 16px',
+    fontSize: '15px',
+    lineHeight: 1.4,
+    color: '#5b6470'
+  },
+  comparisonHeaderRow: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(150px, 0.9fr) minmax(0, 1.3fr) minmax(0, 1.3fr)',
+    gap: '10px',
+    alignItems: 'end',
+    marginBottom: '10px'
+  },
+  comparisonColumnHeading: {
+    fontSize: '16px',
+    fontWeight: 700,
+    color: '#1f2937'
+  },
+  comparisonGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(150px, 0.9fr) minmax(0, 1.3fr) minmax(0, 1.3fr)',
+    gap: '10px',
+    alignItems: 'stretch'
+  },
+  comparisonLabelCell: {
+    padding: '12px 10px',
+    borderRadius: '10px',
+    backgroundColor: '#f8f9fb',
+    fontSize: '16px',
+    fontWeight: 700,
+    lineHeight: 1.4,
+    color: '#111827'
+  },
+  comparisonValueCell: {
+    padding: '12px 14px',
+    borderRadius: '10px',
+    fontSize: '16px',
+    lineHeight: 1.5,
+    color: '#111827',
+    border: '1px solid transparent',
+    wordBreak: 'break-word'
+  },
+  comparisonMultilineValue: {
+    whiteSpace: 'pre-line'
+  },
+  comparisonSameCell: {
+    backgroundColor: '#f8f9fb',
+    borderColor: '#e5e7eb'
+  },
+  comparisonDiffCell: {
+    backgroundColor: '#fff4d6',
+    borderColor: '#f2cf74'
   },
   text: {
     color: 'black',
