@@ -175,6 +175,23 @@ export function formatMessage(message, values = {}, locale) {
   ));
 }
 
+
+function buildPluralPreviewMessage(message, locale) {
+  const formattedMessage = formatMessage(
+    message,
+    {
+      exampleOne: 1,
+      exampleThree: 3,
+      exampleFive: 5,
+      count: 1
+    },
+    locale
+  );
+
+  const lines = formattedMessage.split('\n');
+  return lines.length > 4 ? lines.slice(0, 4).join('\n') : formattedMessage;
+}
+
 export function getStaticMessagesForLocale(inputLocale, customerFallbacks = {}) {
   const likelyLocale = getLikelyLocale(inputLocale);
   const resolvedLocale = resolveLocale(likelyLocale, STATIC_MESSAGES, customerFallbacks);
@@ -205,6 +222,83 @@ function getLanguageName(locale) {
   }
 }
 
+function getWeekdayName(dayIndex, displayLocale) {
+  const weekdayDateMap = {
+    1: new Date(Date.UTC(2023, 0, 1, 12)),
+    2: new Date(Date.UTC(2023, 0, 2, 12)),
+    3: new Date(Date.UTC(2023, 0, 3, 12)),
+    4: new Date(Date.UTC(2023, 0, 4, 12)),
+    5: new Date(Date.UTC(2023, 0, 5, 12)),
+    6: new Date(Date.UTC(2023, 0, 6, 12)),
+    7: new Date(Date.UTC(2023, 0, 7, 12))
+  };
+
+  return new Intl.DateTimeFormat(displayLocale, {
+    weekday: 'long',
+    timeZone: 'UTC'
+  }).format(weekdayDateMap[dayIndex]);
+}
+
+function getDatePattern(locale, date) {
+  try {
+    const formatter = new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    const options = formatter.resolvedOptions();
+    const tokens = {
+      year: options.year === '2-digit' ? 'yy' : 'y',
+      month: {
+        numeric: 'M',
+        '2-digit': 'MM',
+        short: 'MMM',
+        long: 'MMMM',
+        narrow: 'MMMMM'
+      }[options.month] || 'M',
+      day: options.day === '2-digit' ? 'dd' : 'd'
+    };
+
+    return formatter
+      .formatToParts(date)
+      .filter(({ type }) => type === 'year' || type === 'month' || type === 'day')
+      .map(({ type }) => tokens[type])
+      .join('');
+  } catch {
+    return '';
+  }
+}
+
+function getTimePattern(locale, date) {
+  try {
+    const formatter = new Intl.DateTimeFormat(locale, {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const options = formatter.resolvedOptions();
+    const isTwelveHour = options.hourCycle === 'h11' || options.hourCycle === 'h12';
+    const hourToken = isTwelveHour
+      ? (options.hour === '2-digit' ? 'hh' : 'h')
+      : (options.hour === '2-digit' ? 'HH' : 'H');
+    const minuteToken = options.minute === '2-digit' ? 'mm' : 'm';
+
+    return formatter
+      .formatToParts(date)
+      .map(({ type, value }) => {
+        if (type === 'hour') return hourToken;
+        if (type === 'minute') return minuteToken;
+        if (type === 'dayPeriod') return 'a';
+        if (type === 'literal') return value.replace(/[\u00a0\u202f]/g, ' ');
+        return '';
+      })
+      .join('')
+      .replace(/\s+/g, ' ')
+      .trim();
+  } catch {
+    return '';
+  }
+}
+
 function getFirstDayOfWeek(regionLocale) {
   try {
     const localeInfo = new Intl.Locale(regionLocale);
@@ -214,20 +308,37 @@ function getFirstDayOfWeek(regionLocale) {
       7;
     const firstDayOfWeek = intlFirstDay === 7 ? 1 : intlFirstDay + 1;
 
-    const weekdayDateMap = {
-      1: new Date(Date.UTC(2023, 0, 1, 12)),
-      2: new Date(Date.UTC(2023, 0, 2, 12)),
-      3: new Date(Date.UTC(2023, 0, 3, 12)),
-      4: new Date(Date.UTC(2023, 0, 4, 12)),
-      5: new Date(Date.UTC(2023, 0, 5, 12)),
-      6: new Date(Date.UTC(2023, 0, 6, 12)),
-      7: new Date(Date.UTC(2023, 0, 7, 12))
-    };
+    return getWeekdayName(firstDayOfWeek, regionLocale);
+  } catch {
+    return '';
+  }
+}
 
-    return new Intl.DateTimeFormat(regionLocale, {
-      weekday: 'long',
-      timeZone: 'UTC'
-    }).format(weekdayDateMap[firstDayOfWeek]);
+
+export function getFirstDayOfWeekIndex(regionLocale) {
+  try {
+    const localeInfo = new Intl.Locale(regionLocale);
+    const intlFirstDay =
+      localeInfo.getWeekInfo?.().firstDay ??
+      localeInfo.weekInfo?.firstDay ??
+      7;
+    return intlFirstDay === 7 ? 1 : intlFirstDay + 1;
+  } catch {
+    return null;
+  }
+}
+
+export function getPluralRuleSignature(locale) {
+  try {
+    const rules = new Intl.PluralRules(locale);
+    const integerSamples = Array.from({ length: 201 }, (_value, count) => count);
+    const decimalSamples = [0.1, 0.5, 1.1, 1.5, 2.1, 2.5, 10.1, 100.1];
+    const categories = rules.resolvedOptions().pluralCategories || [];
+    const selections = [...integerSamples, ...decimalSamples]
+      .map((count) => `${count}:${rules.select(count)}`)
+      .join('|');
+
+    return `${categories.join(',')}|${selections}`;
   } catch {
     return '';
   }
@@ -313,6 +424,11 @@ export function buildPreparedLocaleBundle({
         hour: '2-digit',
         minute: '2-digit'
       }),
+      datePattern: getDatePattern(formattingLocale, now),
+      dateTimePattern: [
+        getDatePattern(formattingLocale, now),
+        getTimePattern(formattingLocale, now)
+      ].filter(Boolean).join(' '),
       todayDate: now.toLocaleDateString(formattingLocale, {
         year: 'numeric',
         month: 'long',
@@ -328,14 +444,14 @@ export function buildPreparedLocaleBundle({
         maximumFractionDigits: 0
       }).format(0.8),
       firstDayOfWeek: getFirstDayOfWeek(formattingLocale),
-      pluralMessage: formatMessage(
+      firstDayOfWeekEnglish: getWeekdayName(
+        getFirstDayOfWeekIndex(formattingLocale),
+        'en-US'
+      ),
+      firstDayOfWeekIndex: getFirstDayOfWeekIndex(formattingLocale),
+      pluralRuleSignature: getPluralRuleSignature(localeUsed),
+      pluralMessage: buildPluralPreviewMessage(
         mergedMessages.pluralSentence,
-        {
-          exampleOne: 1,
-          exampleThree: 3,
-          exampleFive: 5,
-          count: now.getSeconds() % 10
-        },
         localeUsed
       )
     }

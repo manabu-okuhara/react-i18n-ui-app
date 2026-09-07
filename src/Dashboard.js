@@ -4,7 +4,8 @@ import {
   AVAILABLE_LOCALES,
   BASE_MESSAGES,
   buildPreparedLocaleBundle,
-  formatMessage,
+  getPluralRuleSignature,
+  getFirstDayOfWeekIndex,
 } from './translateLocaleBundle';
 import { requestLocaleBundle } from './localeBundleClient';
 import { evaluateLocaleBundle } from './localeQaClient';
@@ -22,93 +23,6 @@ function getLanguageName(locale) {
   } catch {
     return locale;
   }
-}
-
-function renderFormattedMessage(message, locale, values = {}) {
-  const formatted = formatMessage(message, values, locale);
-  const highlightedValues = new Set(
-    Object.values(values)
-      .filter((value) => value !== undefined && value !== null)
-      .map((value) => String(value))
-      .filter(Boolean)
-  );
-
-  if (highlightedValues.size === 0) {
-    return formatted;
-  }
-
-  const segments = [];
-  let cursor = 0;
-  let key = 0;
-
-  while (cursor < formatted.length) {
-    let matchValue = '';
-    let matchIndex = -1;
-
-    for (const value of highlightedValues) {
-      const index = formatted.indexOf(value, cursor);
-      if (index === -1) {
-        continue;
-      }
-
-      if (matchIndex === -1 || index < matchIndex || (index === matchIndex && value.length > matchValue.length)) {
-        matchIndex = index;
-        matchValue = value;
-      }
-    }
-
-    if (matchIndex === -1) {
-      segments.push(formatted.slice(cursor));
-      break;
-    }
-
-    if (matchIndex > cursor) {
-      segments.push(formatted.slice(cursor, matchIndex));
-    }
-
-    segments.push(
-      <span key={`value-${key}`} style={styles.valueText}>
-        {matchValue}
-      </span>
-    );
-
-    cursor = matchIndex + matchValue.length;
-    key += 1;
-  }
-
-  return segments;
-}
-
-function renderNumberWithSeparatorColors(value) {
-  return value.split('').map((char, index) => {
-    const isSeparator = /[.,٬٫]/u.test(char);
-    return (
-      <span
-        key={`number-${index}`}
-        style={isSeparator ? styles.separatorText : styles.valueText}
-      >
-        {char}
-      </span>
-    );
-  });
-}
-
-function renderValueSentence(message, locale, values, renderedValue) {
-  const marker = '__VALUE__';
-  const templated = formatMessage(
-    message.replace('{value}', marker),
-    values,
-    locale
-  );
-  const [before, after] = templated.split(marker);
-
-  return (
-    <>
-      {before}
-      {renderedValue}
-      {after}
-    </>
-  );
 }
 
 function renderPluralMessage(message) {
@@ -233,65 +147,109 @@ const VOICE_UI_MESSAGES = {
 };
 
 
+const ENGLISH_APP_SHELL_MESSAGES = {
+  title: BASE_MESSAGES.title,
+  share: BASE_MESSAGES.share,
+  chooseLocale: BASE_MESSAGES.chooseLocale
+};
+
 const COMPARISON_UI_MESSAGES = {
   title: 'Locale Comparison',
   note: 'Highlighted values differ from the en-US baseline.',
   selectedLabel: 'Selected Locale',
-  baselineLabel: 'en-US Baseline'
+  baselineLabel: 'en-US Baseline',
+  submitLabel: 'Apply Locale'
 };
+
+function appendParenthetical(value, detail) {
+  return detail ? `${value} (${detail})` : value;
+}
+
+function appendEnglishWeekday(value, englishValue) {
+  return value && englishValue && value !== englishValue
+    ? appendParenthetical(value, englishValue)
+    : value;
+}
 
 function getComparisonRows(preparedBundle, comparisonBundle) {
   if (!preparedBundle || !comparisonBundle) {
     return [];
   }
 
+  const selectedPluralSignature = preparedBundle.values?.pluralRuleSignature || getPluralRuleSignature(preparedBundle.localeUsed);
+  const baselinePluralSignature = comparisonBundle.values?.pluralRuleSignature || getPluralRuleSignature(comparisonBundle.localeUsed);
+  const selectedFirstDayIndex = preparedBundle.values?.firstDayOfWeekIndex ?? getFirstDayOfWeekIndex(preparedBundle.formattingLocale);
+  const baselineFirstDayIndex = comparisonBundle.values?.firstDayOfWeekIndex ?? getFirstDayOfWeekIndex(comparisonBundle.formattingLocale);
+
   return [
     {
       id: 'language',
       label: 'Language',
       selectedValue: preparedBundle.values.languageName,
-      baselineValue: comparisonBundle.values.languageName
+      baselineValue: comparisonBundle.values.languageName,
+      compareMode: 'informational'
     },
     {
       id: 'region',
       label: 'Region',
       selectedValue: preparedBundle.values.regionName,
-      baselineValue: comparisonBundle.values.regionName
+      baselineValue: comparisonBundle.values.regionName,
+      compareMode: 'informational'
     },
     {
       id: 'date-time',
       label: 'Date / Time',
-      selectedValue: preparedBundle.values.currentDate,
-      baselineValue: comparisonBundle.values.currentDate
+      selectedValue: appendParenthetical(
+        preparedBundle.values.currentDate,
+        preparedBundle.values.dateTimePattern || preparedBundle.values.datePattern
+      ),
+      baselineValue: appendParenthetical(
+        comparisonBundle.values.currentDate,
+        comparisonBundle.values.dateTimePattern || comparisonBundle.values.datePattern
+      ),
+      compareMode: 'display'
     },
     {
       id: 'number',
       label: 'Number',
       selectedValue: preparedBundle.values.formattedNumber,
-      baselineValue: comparisonBundle.values.formattedNumber
+      baselineValue: comparisonBundle.values.formattedNumber,
+      compareMode: 'display'
     },
     {
       id: 'percent',
       label: 'Percent',
       selectedValue: preparedBundle.values.percentValue,
-      baselineValue: comparisonBundle.values.percentValue
+      baselineValue: comparisonBundle.values.percentValue,
+      compareMode: 'display'
     },
     {
       id: 'first-day',
       label: 'First Day of Week',
-      selectedValue: preparedBundle.values.firstDayOfWeek,
-      baselineValue: comparisonBundle.values.firstDayOfWeek
+      selectedValue: appendEnglishWeekday(
+        preparedBundle.values.firstDayOfWeek,
+        preparedBundle.values.firstDayOfWeekEnglish
+      ),
+      baselineValue: comparisonBundle.values.firstDayOfWeek,
+      compareMode: 'semantic',
+      semanticDiffers: selectedFirstDayIndex !== baselineFirstDayIndex
     },
     {
       id: 'plurals',
       label: 'Plural Examples',
       selectedValue: preparedBundle.values.pluralMessage,
       baselineValue: comparisonBundle.values.pluralMessage,
-      multiline: true
+      multiline: true,
+      compareMode: 'semantic',
+      semanticDiffers: selectedPluralSignature !== baselinePluralSignature
     }
   ].map((row) => ({
     ...row,
-    differs: row.selectedValue !== row.baselineValue
+    differs: row.compareMode === 'informational'
+      ? false
+      : row.compareMode === 'semantic'
+        ? Boolean(row.semanticDiffers)
+        : row.selectedValue !== row.baselineValue
   }));
 }
 
@@ -496,39 +454,7 @@ function Dashboard() {
     [preparedBundle, comparisonBundle]
   );
 
-  const displayContent = preparedBundle
-      ? {
-        inputLocaleDisplay: renderFormattedMessage(preparedBundle.messages.inputLocaleSentence, preparedBundle.inputLocale, {
-          inputLocale: preparedBundle.inputLocaleDisplay
-        }),
-        languageDisplay: renderFormattedMessage(preparedBundle.messages.languageSentence, preparedBundle.formattingLocale, {
-          languageName: preparedBundle.values.languageName
-        }),
-        regionDisplay: renderFormattedMessage(preparedBundle.messages.regionSentence, preparedBundle.formattingLocale, {
-          regionName: preparedBundle.values.regionName
-        }),
-        icuSectionTitle: preparedBundle.messages.icuSectionTitle,
-        dateDisplay: renderFormattedMessage(preparedBundle.messages.dateSentence, preparedBundle.formattingLocale, {
-          currentDate: preparedBundle.values.currentDate
-        }),
-        numberDisplay: renderValueSentence(
-          preparedBundle.messages.numberSentence,
-          preparedBundle.formattingLocale,
-          { todayDate: preparedBundle.values.todayDate },
-          renderNumberWithSeparatorColors(preparedBundle.values.formattedNumber)
-        ),
-        percentDisplay: renderFormattedMessage(preparedBundle.messages.percentSentence, preparedBundle.formattingLocale, {
-          percentValue: preparedBundle.values.percentValue
-        }),
-        firstDayOfWeekDisplay: renderFormattedMessage(
-          preparedBundle.messages.firstDayOfWeekSentence,
-          preparedBundle.formattingLocale,
-          { firstDayOfWeek: preparedBundle.values.firstDayOfWeek }
-        ),
-        warningMessage: preparedBundle.warningMessage,
-        pluralDisplay: preparedBundle.values.pluralMessage
-      }
-    : null;
+  const warningMessage = preparedBundle?.warningMessage || '';
 
   return (
     <div
@@ -538,15 +464,15 @@ function Dashboard() {
       }}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <div style={styles.topBar}>
-        <h1 style={styles.header}>{activeMessages.title}</h1>
+      <div style={styles.topBar} dir="ltr">
+        <h1 style={styles.header}>{ENGLISH_APP_SHELL_MESSAGES.title}</h1>
         <button onClick={copyLink} style={styles.shareBtn} type="button">
-          {activeMessages.share}
+          {ENGLISH_APP_SHELL_MESSAGES.share}
         </button>
       </div>
 
-      <div style={styles.searchContainer}>
-        <label htmlFor="locale-input" style={styles.label}>{activeMessages.chooseLocale}</label>
+      <div style={styles.searchContainer} dir="ltr">
+        <label htmlFor="locale-input" style={styles.label}>{ENGLISH_APP_SHELL_MESSAGES.chooseLocale}</label>
         <div style={styles.inputRow}>
           <input
             id="locale-input"
@@ -569,6 +495,13 @@ function Dashboard() {
             }}
             style={styles.input}
           />
+          <button
+            type="button"
+            onClick={() => submitLocale(searchTerm)}
+            style={styles.submitButton}
+          >
+            {COMPARISON_UI_MESSAGES.submitLabel}
+          </button>
           {isVoiceSupported ? (
             <button
               type="button"
@@ -609,27 +542,14 @@ function Dashboard() {
         <p style={styles.text}>Preparing locale bundle...</p>
       )}
 
-      {displayContent && (
+      {preparedBundle ? (
         <>
-          <div style={styles.result}>
-            {displayContent.warningMessage ? (
-              <p style={styles.warningText}>{displayContent.warningMessage}</p>
-            ) : null}
-            <p style={styles.text}>{displayContent.inputLocaleDisplay}</p>
-            <p style={styles.text}>{displayContent.languageDisplay}</p>
-            <p style={styles.text}>{displayContent.regionDisplay}</p>
-            <p style={styles.sectionHeading}>{displayContent.icuSectionTitle}</p>
-            <p style={styles.text}>{displayContent.dateDisplay}</p>
-            <p style={styles.text}>{displayContent.numberDisplay}</p>
-            <p style={styles.text}>{displayContent.percentDisplay}</p>
-            <p style={styles.text}>{displayContent.firstDayOfWeekDisplay}</p>
-            <p style={{ ...styles.text, ...styles.pluralBlock }}>
-              {renderPluralMessage(displayContent.pluralDisplay)}
-            </p>
-          </div>
+          {warningMessage ? (
+            <p style={styles.warningText}>{warningMessage}</p>
+          ) : null}
 
           {comparisonBundle ? (
-            <section style={styles.comparisonCard} aria-label="Locale Comparison">
+            <section style={styles.comparisonCard} aria-label="Locale Comparison" dir="ltr">
               <h2 style={styles.comparisonHeading}>{COMPARISON_UI_MESSAGES.title}</h2>
               <p style={styles.comparisonNote}>{COMPARISON_UI_MESSAGES.note}</p>
               <div style={styles.comparisonHeaderRow}>
@@ -649,23 +569,27 @@ function Dashboard() {
                       <div style={styles.comparisonLabelCell}>{row.label}</div>
                       <div
                         data-testid={`comparison-cell-${row.id}-selected`}
+                        dir="auto"
+                        aria-label={`${row.label}, selected locale, ${row.differs ? 'different from' : 'equivalent to'} en-US baseline`}
                         style={{
                           ...styles.comparisonValueCell,
                           ...cellStyle,
                           ...(row.multiline ? styles.comparisonMultilineValue : null)
                         }}
                       >
-                        {row.selectedValue}
+                        {row.multiline ? renderPluralMessage(row.selectedValue) : row.selectedValue}
                       </div>
                       <div
                         data-testid={`comparison-cell-${row.id}-baseline`}
+                        dir="auto"
+                        aria-label={`${row.label}, en-US baseline`}
                         style={{
                           ...styles.comparisonValueCell,
                           ...cellStyle,
                           ...(row.multiline ? styles.comparisonMultilineValue : null)
                         }}
                       >
-                        {row.baselineValue}
+                        {row.multiline ? renderPluralMessage(row.baselineValue) : row.baselineValue}
                       </div>
                     </React.Fragment>
                   );
@@ -674,7 +598,7 @@ function Dashboard() {
             </section>
           ) : null}
         </>
-      )}
+      ) : null}
 
       <LocaleQaPanel qaResult={qaResult} bundle={preparedBundle} />
     </div>
@@ -745,6 +669,16 @@ const styles = {
     cursor: 'pointer',
     fontSize: '18px',
     minWidth: '110px'
+  },
+  submitButton: {
+    border: 'none',
+    borderRadius: '8px',
+    padding: '0 16px',
+    backgroundColor: '#1f2937',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '18px',
+    minWidth: '132px'
   },
   voiceMessage: {
     margin: '10px 0 0',

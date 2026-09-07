@@ -43,6 +43,7 @@ function createAiLocaleReviewRequest(bundle) {
     'Limit the summary to at most 2 short sentences.',
     'Limit findings to at most 3 items and keep each message to one short sentence.',
     'Keep the recommended next step to one short sentence.',
+    'Write the summary, recommended next step, and findings in English regardless of the locale being reviewed.',
     'Return JSON only that matches the requested schema.',
     JSON.stringify(createAiLocaleReviewInput(bundle), null, 2)
   ].join('\n\n');
