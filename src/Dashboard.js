@@ -10,6 +10,16 @@ import {
 import { requestLocaleBundle } from './localeBundleClient';
 import { evaluateLocaleBundle } from './localeQaClient';
 import LocaleQaPanel from './components/LocaleQaPanel';
+import {
+  applyIcu4xDateTime,
+  getLoadedIcu4xEngine,
+  loadIcu4xEngine,
+} from './icu4x/icu4xLoader';
+import {
+  DEFAULT_ICU4X_VERSION,
+  ICU4X_VERSION_OPTIONS,
+  getIcu4xVersionOption,
+} from './icu4x/versionRegistry';
 
 function getInitialLocale() {
   const params = new URLSearchParams(window.location.search);
@@ -161,6 +171,15 @@ const COMPARISON_UI_MESSAGES = {
   submitLabel: 'Apply Locale'
 };
 
+const ICU4X_UI_MESSAGES = {
+  label: 'Date/time engine',
+  loading: (version) => `Loading ICU4X ${version}...`,
+  ready: (version, cldrVersion) => `ICU4X ${version} / CLDR ${cldrVersion}`,
+  fallback: 'ICU4X could not be loaded. Browser Intl formatting remains active.',
+  localeFallback: (version) => `ICU4X ${version} does not support this locale in the bundled data. Browser Intl is used for this value.`,
+  customBuild: 'custom WASM build required'
+};
+
 function appendParenthetical(value, detail) {
   return detail ? `${value} (${detail})` : value;
 }
@@ -297,10 +316,18 @@ function Dashboard() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [preparedBundle, setPreparedBundle] = useState(null);
   const [qaResult, setQaResult] = useState(null);
+  const [isQaEvaluating, setIsQaEvaluating] = useState(false);
   const [isPreparing, setIsPreparing] = useState(false);
   const [lastSubmittedLocale, setLastSubmittedLocale] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [voiceMessage, setVoiceMessage] = useState('');
+  const [icu4xVersion, setIcu4xVersion] = useState(DEFAULT_ICU4X_VERSION);
+  const [icu4xEngine, setIcu4xEngine] = useState(
+    () => getLoadedIcu4xEngine(DEFAULT_ICU4X_VERSION)
+  );
+  const [icu4xStatus, setIcu4xStatus] = useState(
+    () => getLoadedIcu4xEngine(DEFAULT_ICU4X_VERSION) ? 'ready' : 'loading'
+  );
   const recognitionRef = useRef(null);
 
   const customerFallbacks = useMemo(
@@ -310,6 +337,35 @@ function Dashboard() {
   const activeMessages = preparedBundle?.messages || BASE_MESSAGES;
   const isRTL = preparedBundle?.isRTL || false;
   const preparedLocale = preparedBundle?.inputLocale || '';
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (icu4xEngine?.version === icu4xVersion) {
+      setIcu4xStatus('ready');
+      return undefined;
+    }
+
+    setIcu4xStatus('loading');
+    setIcu4xEngine(null);
+    loadIcu4xEngine(icu4xVersion)
+      .then((engine) => {
+        if (isActive) {
+          setIcu4xEngine(engine);
+          setIcu4xStatus('ready');
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setIcu4xEngine(null);
+          setIcu4xStatus('error');
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [icu4xEngine?.version, icu4xVersion]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -348,6 +404,7 @@ function Dashboard() {
     setIsPreparing(true);
     setLastSubmittedLocale(trimmedLocale);
     setQaResult(null);
+    setIsQaEvaluating(true);
 
     try {
       const bundle = await requestLocaleBundle(trimmedLocale, customerFallbacks);
@@ -416,25 +473,6 @@ function Dashboard() {
     }
   };
 
-  useEffect(() => {
-    let isActive = true;
-
-    if (!preparedBundle) {
-      setQaResult(null);
-      return undefined;
-    }
-
-    evaluateLocaleBundle(preparedBundle).then((result) => {
-      if (isActive) {
-        setQaResult(result);
-      }
-    });
-
-    return () => {
-      isActive = false;
-    };
-  }, [preparedBundle]);
-
   const comparisonBundle = useMemo(() => {
     if (!preparedBundle) {
       return null;
@@ -449,10 +487,54 @@ function Dashboard() {
     });
   }, [preparedBundle]);
 
-  const comparisonRows = useMemo(
-    () => getComparisonRows(preparedBundle, comparisonBundle),
-    [preparedBundle, comparisonBundle]
+  const displayedPreparedBundle = useMemo(
+    () => applyIcu4xDateTime(preparedBundle, icu4xEngine),
+    [preparedBundle, icu4xEngine]
   );
+
+  const displayedComparisonBundle = useMemo(
+    () => applyIcu4xDateTime(comparisonBundle, icu4xEngine),
+    [comparisonBundle, icu4xEngine]
+  );
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (!displayedPreparedBundle) {
+      setQaResult(null);
+      setIsQaEvaluating(false);
+      return undefined;
+    }
+
+    setQaResult(null);
+    setIsQaEvaluating(true);
+
+    if (icu4xStatus === 'loading') {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    evaluateLocaleBundle(displayedPreparedBundle).then((result) => {
+      if (isActive) {
+        setQaResult(result);
+        setIsQaEvaluating(false);
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [displayedPreparedBundle, icu4xStatus]);
+
+  const comparisonRows = useMemo(
+    () => getComparisonRows(displayedPreparedBundle, displayedComparisonBundle),
+    [displayedPreparedBundle, displayedComparisonBundle]
+  );
+
+  const selectedIcu4xMetadata = getIcu4xVersionOption(icu4xVersion);
+  const isLocaleFormattingFallback =
+    displayedPreparedBundle?.formattingEngine?.status === 'locale-fallback';
 
   const warningMessage = preparedBundle?.warningMessage || '';
 
@@ -518,6 +600,34 @@ function Dashboard() {
           <p style={styles.voiceMessage}>{voiceMessage}</p>
         ) : null}
 
+        <div style={styles.engineRow}>
+          <label htmlFor="icu4x-version" style={styles.engineLabel}>
+            {ICU4X_UI_MESSAGES.label}
+          </label>
+          <select
+            id="icu4x-version"
+            value={icu4xVersion}
+            onChange={(event) => setIcu4xVersion(event.target.value)}
+            style={styles.engineSelect}
+          >
+            {ICU4X_VERSION_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id} disabled={!option.available}>
+                ICU4X {option.id} / CLDR {option.cldrVersion}
+                {!option.available ? ` — ${ICU4X_UI_MESSAGES.customBuild}` : ''}
+              </option>
+            ))}
+          </select>
+          <span style={styles.engineStatus} role="status" aria-live="polite">
+            {icu4xStatus === 'ready'
+              ? isLocaleFormattingFallback
+                ? ICU4X_UI_MESSAGES.localeFallback(icu4xVersion)
+                : ICU4X_UI_MESSAGES.ready(icu4xVersion, selectedIcu4xMetadata.cldrVersion)
+              : icu4xStatus === 'loading'
+                ? ICU4X_UI_MESSAGES.loading(icu4xVersion)
+                : ICU4X_UI_MESSAGES.fallback}
+          </span>
+        </div>
+
         {showDropdown && suggestions.length > 0 && (
           <div style={styles.dropdown}>
             {suggestions.map((code) => (
@@ -555,7 +665,7 @@ function Dashboard() {
               <div style={styles.comparisonHeaderRow}>
                 <div />
                 <div style={styles.comparisonColumnHeading}>
-                  {COMPARISON_UI_MESSAGES.selectedLabel}: {preparedBundle.inputLocaleDisplay}
+                  {COMPARISON_UI_MESSAGES.selectedLabel}: {displayedPreparedBundle.inputLocaleDisplay}
                 </div>
                 <div style={styles.comparisonColumnHeading}>
                   {COMPARISON_UI_MESSAGES.baselineLabel}
@@ -600,7 +710,11 @@ function Dashboard() {
         </>
       ) : null}
 
-      <LocaleQaPanel qaResult={qaResult} bundle={preparedBundle} />
+      <LocaleQaPanel
+        qaResult={qaResult}
+        bundle={displayedPreparedBundle}
+        isLoading={isQaEvaluating}
+      />
     </div>
   );
 }
@@ -685,6 +799,30 @@ const styles = {
     fontSize: '16px',
     lineHeight: 1.4,
     color: '#444'
+  },
+  engineRow: {
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '8px 12px',
+    marginTop: '12px'
+  },
+  engineLabel: {
+    fontSize: '15px',
+    fontWeight: 700,
+    color: '#1f2937'
+  },
+  engineSelect: {
+    padding: '7px 10px',
+    border: '1px solid #cbd5e1',
+    borderRadius: '7px',
+    backgroundColor: '#fff',
+    color: '#111827',
+    fontSize: '15px'
+  },
+  engineStatus: {
+    fontSize: '14px',
+    color: '#5b6470'
   },
   dropdown: {
     display: 'grid',

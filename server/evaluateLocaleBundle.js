@@ -37,6 +37,18 @@ function evaluatePreparedBundle(bundle, serviceMeta = { mode: 'deterministic-ser
       : 'Generated or fallback plural content'
   });
 
+  if (bundle.formattingEngine) {
+    const engine = bundle.formattingEngine;
+    checks.push({
+      id: 'date-time-engine',
+      label: 'Date/Time Engine',
+      status: engine.status === 'active' ? 'pass' : 'warn',
+      detail: engine.status === 'active'
+        ? `${engine.name} ${engine.version} / CLDR ${engine.cldrVersion}`
+        : `Browser Intl fallback requested by ICU4X ${engine.version}`
+    });
+  }
+
   const status = checks.some((check) => check.status === 'fail')
     ? 'fail'
     : checks.some((check) => check.status === 'warn')
