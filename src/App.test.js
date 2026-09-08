@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import App from './App';
-import { BASE_MESSAGES, buildPreparedLocaleBundle } from './translateLocaleBundle';
+import { BASE_MESSAGES, buildPreparedLocaleBundle, prepareLocaleBundle } from './translateLocaleBundle';
 
 function submitLocale(value, trigger = 'enter') {
   const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
@@ -73,7 +73,19 @@ test('prepares Japanese content after Enter is pressed', async () => {
 
   expect(await screen.findByRole('heading')).toBeInTheDocument();
   expectPreparedValuesFor('ja-JP');
-  expect(screen.getByRole('button')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Apply Locale/i })).toBeInTheDocument();
+});
+
+test('keeps the app title and copy-link action in English for every locale', async () => {
+  render(<App />);
+
+  submitLocale('pl-PL');
+
+  expect(await screen.findByRole('heading', { name: BASE_MESSAGES.title })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: BASE_MESSAGES.share })).toBeInTheDocument();
+  expect(screen.getByLabelText(BASE_MESSAGES.chooseLocale)).toBeInTheDocument();
+  expect(screen.queryByText('Aplikacja demonstracyjna internacjonalizacji z React JavaScript / TypeScript na narzedziach Node.js')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Kopiuj link' })).not.toBeInTheDocument();
 });
 
 test('uses backend-translated bundle for arbitrary unsupported locales after Enter', async () => {
@@ -103,8 +115,8 @@ test('uses backend-translated bundle for arbitrary unsupported locales after Ent
   render(<App />);
   submitLocale('it-IT');
 
-  expect(await screen.findByRole('heading', { name: 'IT backend heading' })).toBeInTheDocument();
-  expectTextContentContains('IT locale used: it-IT');
+  expect(await screen.findByRole('heading', { name: BASE_MESSAGES.title })).toBeInTheDocument();
+  expectTextContentContains('Selected Locale: it-IT');
   expect(global.fetch).toHaveBeenCalledWith(
     '/api/translate-locale-bundle',
     expect.objectContaining({ method: 'POST' })
@@ -152,8 +164,8 @@ test('uses client-side automated translation when backend is unavailable for uns
   render(<App />);
   submitLocale('it-IT');
 
-  expect(await screen.findByRole('heading', { name: 'IT client heading' })).toBeInTheDocument();
-  expectTextContentContains('IT client locale: it-IT');
+  expect(await screen.findByRole('heading', { name: BASE_MESSAGES.title })).toBeInTheDocument();
+  expectTextContentContains('Selected Locale: it-IT');
   expectPreparedValuesFor('it-IT');
 });
 
@@ -204,8 +216,8 @@ test('uses client-side automated translation when backend returns english fallba
   render(<App />);
   submitLocale('nl-NL');
 
-  expect(await screen.findByRole('heading', { name: 'NL client heading' })).toBeInTheDocument();
-  expectTextContentContains('NL client locale: nl-NL');
+  expect(await screen.findByRole('heading', { name: BASE_MESSAGES.title })).toBeInTheDocument();
+  expectTextContentContains('Selected Locale: nl-NL');
 });
 
 test('falls back to english copy while keeping requested locale formatting when automated translation is unavailable', async () => {
@@ -368,7 +380,7 @@ test('applies rtl direction for Arabic after Enter using ICU direction info', as
   await screen.findByRole('heading');
   const dashboard = document.querySelector('[dir="rtl"]');
   expect(dashboard).not.toBeNull();
-  expect(screen.getByRole('button')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Apply Locale/i })).toBeInTheDocument();
 });
 
 test('clicking a suggested locale fills the input without preparing the content', () => {
@@ -393,6 +405,27 @@ test('blurring the locale input prepares the locale content', async () => {
 
   expect(await screen.findByRole('heading')).toBeInTheDocument();
   expectPreparedValuesFor('ja-JP');
+});
+
+test('clicking the apply button prepares the locale content', async () => {
+  render(<App />);
+
+  const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
+  fireEvent.change(input, { target: { value: 'pl-PL' } });
+  fireEvent.click(screen.getByRole('button', { name: /Apply Locale/i }));
+
+  expect(await screen.findByRole('heading')).toBeInTheDocument();
+  expectPreparedValuesFor('pl-PL');
+});
+
+test('limits plural preview output to the fixed example rows', () => {
+  const bundle = prepareLocaleBundle('ja-JP');
+  const lines = bundle.values.pluralMessage.split('\n');
+
+  expect(lines).toHaveLength(4);
+  expect(lines[1]).toContain('1');
+  expect(lines[2]).toContain('3');
+  expect(lines[3]).toContain('5');
 });
 
 test('accepts locale input through browser speech recognition', async () => {
@@ -431,13 +464,52 @@ test('accepts locale input through browser speech recognition', async () => {
   expectPreparedValuesFor('ja-TR');
 });
 
+test('shows a side-by-side locale comparison card with en-US baseline values', async () => {
+  render(<App />);
+  submitLocale('ja-JP');
+
+  expect(await screen.findByRole('heading', { name: /Locale Comparison/i })).toBeInTheDocument();
+  expectTextContentContains('Highlighted values differ from the en-US baseline.');
+  expectTextContentContains('Selected Locale: ja-JP');
+  expectTextContentContains('en-US Baseline');
+  expect(screen.getByTestId('comparison-cell-language-selected')).toHaveTextContent('日本語');
+  expect(screen.getByTestId('comparison-cell-language-baseline')).toHaveTextContent('English');
+  expect(screen.getByTestId('comparison-cell-date-time-selected')).toHaveTextContent(/\(yMd H{1,2}:mm\)/);
+  expect(screen.getByTestId('comparison-cell-first-day-selected')).toHaveTextContent('日曜日 (Sunday)');
+  expect(screen.getByTestId('comparison-cell-date-time-baseline')).toHaveTextContent(/\([^)]*h{1,2}:mm a\)/);
+  expect(screen.getByTestId('comparison-cell-plurals-selected').textContent).not.toContain('<accent>');
+  expect(screen.getByLabelText('Locale Comparison')).toHaveAttribute('dir', 'ltr');
+  expect(screen.getByTestId('comparison-cell-date-time-selected')).toHaveAttribute('dir', 'auto');
+});
+
+test('uses background colors to distinguish different and matching comparison values', async () => {
+  render(<App />);
+  submitLocale('ja-JP');
+
+  await screen.findByRole('heading', { name: /Locale Comparison/i });
+
+  expect(screen.getByTestId('comparison-cell-language-selected')).toHaveStyle({
+    backgroundColor: '#f8f9fb'
+  });
+  expect(screen.getByTestId('comparison-cell-date-time-selected')).toHaveStyle({
+    backgroundColor: '#fff4d6'
+  });
+  expect(screen.getByTestId('comparison-cell-first-day-selected')).toHaveStyle({
+    backgroundColor: '#f8f9fb'
+  });
+  expect(screen.getByTestId('comparison-cell-number-selected')).toHaveStyle({
+    backgroundColor: '#f8f9fb'
+  });
+});
+
 
 test('shows built-in locale QA for ko-KR', async () => {
   render(<App />);
   submitLocale('ko-KR');
 
   expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
-  expectTextContentContains('Bundle Source: built_in');
+  expectTextContentContains('Bundle Source');
+  expectTextContentContains('built_in');
   expectTextContentContains('Issue Type: built-in-locale');
 });
 
@@ -472,7 +544,8 @@ test('uses backend locale evaluation when the service is available', async () =>
   submitLocale('ko-KR');
 
   expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
-  expectTextContentContains('Evaluation Service: deterministic-service');
+  expectTextContentContains('Evaluation Service');
+  expectTextContentContains('deterministic-service');
   expectTextContentContains('AI review is temporarily unavailable because the AI service is rate-limited or has no available quota, so the app is using deterministic checks.');
 });
 
@@ -518,7 +591,8 @@ test('shows AI review details when the backend evaluation service returns them',
   submitLocale('en-JP');
 
   expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
-  expectTextContentContains('Evaluation Service: ai-service');
+  expectTextContentContains('Evaluation Service');
+  expectTextContentContains('ai-service');
   expectTextContentContains('GenAI Review Summary: Labels are coherent, but the mixed locale should be explained.');
   expectTextContentContains('AI Score: 88');
   expectTextContentContains('AI Confidence: high');
@@ -555,6 +629,7 @@ test('falls back to local QA evaluation when backend evaluation is unavailable',
   submitLocale('ko-KR');
 
   expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
-  expectTextContentContains('Evaluation Service: deterministic-local');
+  expectTextContentContains('Evaluation Service');
+  expectTextContentContains('deterministic-local');
   expectTextContentContains('AI review is temporarily unavailable because the evaluation service could not be reached, so the app is using deterministic checks.');
 });
