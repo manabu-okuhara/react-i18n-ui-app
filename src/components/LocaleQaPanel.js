@@ -1,5 +1,11 @@
 import React from 'react';
 
+const QA_PANEL_MESSAGES = {
+  heading: 'GenAI-Assisted Locale QA',
+  subtitle: 'This assessment combines rule-based locale validation with AI-assisted quality review.',
+  evaluating: 'Re-evaluating this locale bundle with deterministic checks and available GenAI services...'
+};
+
 function getStatusTone(status) {
   if (status === 'fail' || status === 'high') {
     return {
@@ -44,21 +50,38 @@ function getAiAvailabilityMessage(serviceMeta = {}) {
   return 'AI review is temporarily unavailable, so the app is using deterministic checks.';
 }
 
-function LocaleQaPanel({ qaResult, bundle }) {
-  if (!qaResult || !bundle) {
+function LocaleQaPanel({ qaResult, bundle, isLoading = false }) {
+  if (!bundle) {
     return null;
+  }
+
+  if (isLoading || !qaResult) {
+    return (
+      <section
+        style={styles.panel}
+        dir="ltr"
+        aria-label={QA_PANEL_MESSAGES.heading}
+        aria-busy="true"
+      >
+        <h2 style={styles.heading}>{QA_PANEL_MESSAGES.heading}</h2>
+        <p style={styles.subtitle}>{QA_PANEL_MESSAGES.subtitle}</p>
+        <p style={styles.loadingMessage} role="status" aria-live="polite">
+          {QA_PANEL_MESSAGES.evaluating}
+        </p>
+      </section>
+    );
   }
 
   const statusTone = getStatusTone(qaResult.status);
   const triageTone = getStatusTone(qaResult.triage?.severity);
 
   return (
-    <section style={styles.panel} dir="ltr" aria-label="GenAI-Assisted Locale QA">
+    <section style={styles.panel} dir="ltr" aria-label={QA_PANEL_MESSAGES.heading}>
       <div style={styles.headerRow}>
         <div>
-          <h2 style={styles.heading}>GenAI-Assisted Locale QA</h2>
+          <h2 style={styles.heading}>{QA_PANEL_MESSAGES.heading}</h2>
           <p style={styles.subtitle}>
-            This assessment combines rule-based locale validation with AI-assisted quality review.
+            {QA_PANEL_MESSAGES.subtitle}
           </p>
         </div>
         <span style={{ ...styles.badge, ...statusTone }}>
@@ -156,6 +179,17 @@ const styles = {
     fontSize: '1rem',
     lineHeight: 1.5,
     color: '#444'
+  },
+  loadingMessage: {
+    margin: '16px 0 0',
+    padding: '12px 14px',
+    border: '1px solid #B6CCF7',
+    borderRadius: '12px',
+    backgroundColor: '#EAF3FF',
+    color: '#1D4ED8',
+    fontSize: '0.98rem',
+    lineHeight: 1.5,
+    fontWeight: 600
   },
   badge: {
     display: 'inline-flex',

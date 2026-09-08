@@ -11,6 +11,10 @@ function createAiLocaleReviewInput(bundle) {
       fallbackReason: bundle.fallbackReason,
       isMixedLocale: bundle.isMixedLocale
     },
+    formattingEngine: bundle.formattingEngine || {
+      name: 'Browser Intl',
+      scope: 'all-formatted-values'
+    },
     values: {
       languageName: bundle.values?.languageName,
       regionName: bundle.values?.regionName,

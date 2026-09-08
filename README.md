@@ -43,6 +43,8 @@ JavaScript uses ICU through the runtime, but it does not expose the exact underl
 - Dynamic translation fallback for unsupported locales
 - Language-only and mixed-locale resolution
 - Locale-aware formatting using JavaScript `Intl`
+- ICU4X 2.2.0 WebAssembly date/time formatting for the selected locale and en-US comparison
+- Lazy-loaded ICU4X 2.0.0 and 2.1.0 comparison engines
 - ICU Message Format-style plural examples
 - Shared timestamps for fair selected-locale and en-US comparisons
 - Apply button, Enter-key submission, and blur/tab-out submission
@@ -110,6 +112,8 @@ Responsibilities:
 - QA panel rendering
 - local deterministic QA fallback
 
+`config-overrides.js` adds the minimal Create React App webpack settings required by the official ICU4X JavaScript/WebAssembly package. It disables the package's unreachable browser-side `fs` resolution and enables asynchronous WebAssembly with top-level await.
+
 ### Backend services
 
 Core files:
@@ -123,6 +127,8 @@ Responsibilities:
 
 - generated translation fallback for unsupported locales
 - deterministic locale-bundle evaluation
+- visible re-evaluation state when locale or ICU4X version changes
+- active ICU4X and CLDR version reporting in deterministic QA checks
 - optional AI-backed review through the OpenAI Responses API
 - normalization of AI output into a UI-safe response
 - classification of AI fallback reasons
@@ -210,7 +216,9 @@ This is a **continuous-localization quality guard**, not a complete bidirectiona
 
 The application is a demo and prototype rather than a complete production localization platform. Potential next steps include:
 
-- an ICU4X WebAssembly proof of concept with pinned ICU4X, CLDR, and TZDB versions
+- expand the ICU4X WebAssembly proof of concept beyond date/time formatting
+- build and publish application-owned ICU4X 1.4/1.5 WASM artifacts, which are not available through the current official `icu` npm package history
+- add ICU4X 2.3.x after validating its release data and comparison behavior
 - selective ICU4X locale-data packaging and bundle-size measurement
 - AI-assisted remediation and locale-bundle draft generation
 - moderation and safety checks for generated locale content
@@ -218,7 +226,9 @@ The application is a demo and prototype rather than a complete production locali
 - speech synthesis for localized output
 - responsive and visual regression coverage across LTR and RTL locales
 
-The ICU4X experiment should be implemented in a separate branch after the current comparison changes are merged because it affects runtime initialization, locale-data packaging, formatting behavior, tests, and the frontend build.
+The ICU4X experiment uses a pinned, preloaded 2.2.0 engine with CLDR 48.2. ICU4X 2.0.0/CLDR 47 and 2.1.0/CLDR 48 are loaded only when selected. Both comparison columns use the same selected engine. ICU4X 1.4/CLDR 44 and 1.5/CLDR 45 remain visible as unavailable roadmap entries until reproducible custom WASM artifacts are added.
+
+The official full-data WASM files are approximately 12–16 MB each before transfer compression. The default 2.2 engine begins loading in the background at application startup; older 2.x files are requested only after selection. A production follow-up should generate feature- and locale-filtered artifacts before enabling more historical versions.
 
 ## Project positioning
 

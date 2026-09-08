@@ -1,6 +1,48 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 import { BASE_MESSAGES, buildPreparedLocaleBundle, prepareLocaleBundle } from './translateLocaleBundle';
+import LocaleQaPanel from './components/LocaleQaPanel';
+import { evaluatePreparedBundle } from './localeQa';
+
+jest.mock('./icu4x/icu4xLoader', () => {
+  const engine = {
+    version: '2.2.0',
+    cldrVersion: '48.2',
+    formatDateTime: (locale, date) => date.toLocaleString(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  };
+
+  return {
+    getLoadedIcu4xEngine: () => engine,
+    loadIcu4xEngine: () => Promise.resolve(engine),
+    applyIcu4xDateTime: (bundle, activeEngine) => {
+      if (!bundle || !activeEngine) return bundle;
+
+      return {
+        ...bundle,
+        formattingEngine: {
+          name: 'ICU4X',
+          version: activeEngine.version,
+          cldrVersion: activeEngine.cldrVersion,
+          scope: 'date-time',
+          status: 'active'
+        },
+        values: {
+          ...bundle.values,
+          currentDate: activeEngine.formatDateTime(
+            bundle.formattingLocale,
+            new Date(bundle.generatedAt)
+          )
+        }
+      };
+    }
+  };
+});
 
 function submitLocale(value, trigger = 'enter') {
   const input = screen.getByLabelText(/Enter Locale to display locale based values:/);
@@ -64,6 +106,57 @@ test('renders the prompt before locale preparation', () => {
   expect(screen.getByRole('heading')).toBeInTheDocument();
   expect(screen.getByLabelText(/Enter Locale to display locale based values:/)).toBeInTheDocument();
   expect(screen.queryByText(/Locale Used:/)).not.toBeInTheDocument();
+});
+
+test('shows pinned ICU4X versions and disables engines that need custom WASM builds', () => {
+  render(<App />);
+
+  const selector = screen.getByLabelText('Date/time engine');
+  expect(selector).toHaveValue('2.2.0');
+  expect(screen.getByRole('option', { name: 'ICU4X 2.2.0 / CLDR 48.2' })).toBeEnabled();
+  expect(screen.getByRole('option', {
+    name: 'ICU4X 1.5.0 / CLDR 45 — custom WASM build required'
+  })).toBeDisabled();
+  expect(screen.getByRole('option', {
+    name: 'ICU4X 1.4.0 / CLDR 44 — custom WASM build required'
+  })).toBeDisabled();
+});
+
+test('shows a GenAI-assisted QA re-evaluation state without retaining stale results', () => {
+  const bundle = buildPreparedLocaleBundle({
+    inputLocale: 'en-US',
+    messages: BASE_MESSAGES
+  });
+
+  render(<LocaleQaPanel bundle={bundle} qaResult={null} isLoading />);
+
+  expect(screen.getByRole('heading', { name: 'GenAI-Assisted Locale QA' })).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent(/Re-evaluating this locale bundle/i);
+});
+
+test('includes the active ICU4X and CLDR versions in deterministic QA', () => {
+  const bundle = {
+    ...buildPreparedLocaleBundle({
+      inputLocale: 'en-US',
+      messages: BASE_MESSAGES
+    }),
+    formattingEngine: {
+      name: 'ICU4X',
+      version: '2.1.0',
+      cldrVersion: '48',
+      scope: 'date-time',
+      status: 'active'
+    }
+  };
+
+  const result = evaluatePreparedBundle(bundle);
+  expect(result.checks).toEqual(expect.arrayContaining([
+    expect.objectContaining({
+      id: 'date-time-engine',
+      status: 'pass',
+      detail: 'ICU4X 2.1.0 / CLDR 48'
+    })
+  ]));
 });
 
 test('prepares Japanese content after Enter is pressed', async () => {
@@ -507,7 +600,7 @@ test('shows built-in locale QA for ko-KR', async () => {
   render(<App />);
   submitLocale('ko-KR');
 
-  expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
+  expect(await screen.findByText('Issue Type: built-in-locale')).toBeInTheDocument();
   expectTextContentContains('Bundle Source');
   expectTextContentContains('built_in');
   expectTextContentContains('Issue Type: built-in-locale');
@@ -543,7 +636,7 @@ test('uses backend locale evaluation when the service is available', async () =>
   render(<App />);
   submitLocale('ko-KR');
 
-  expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
+  expect(await screen.findByText('deterministic-service')).toBeInTheDocument();
   expectTextContentContains('Evaluation Service');
   expectTextContentContains('deterministic-service');
   expectTextContentContains('AI review is temporarily unavailable because the AI service is rate-limited or has no available quota, so the app is using deterministic checks.');
@@ -590,7 +683,7 @@ test('shows AI review details when the backend evaluation service returns them',
   render(<App />);
   submitLocale('en-JP');
 
-  expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
+  expect(await screen.findByText(/GenAI Review Summary:/i)).toBeInTheDocument();
   expectTextContentContains('Evaluation Service');
   expectTextContentContains('ai-service');
   expectTextContentContains('GenAI Review Summary: Labels are coherent, but the mixed locale should be explained.');
@@ -603,7 +696,7 @@ test('shows mixed-locale QA for en-JP', async () => {
   render(<App />);
   submitLocale('en-JP');
 
-  expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
+  expect(await screen.findByText('Issue Type: mixed-locale')).toBeInTheDocument();
   expectTextContentContains('Issue Type: mixed-locale');
 });
 
@@ -611,7 +704,7 @@ test('shows invalid-locale QA for bad locale input', async () => {
   render(<App />);
   submitLocale('ukr_UKR');
 
-  expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
+  expect(await screen.findByText('Issue Type: invalid-locale')).toBeInTheDocument();
   expectTextContentContains('Issue Type: invalid-locale');
 });
 
@@ -628,7 +721,7 @@ test('falls back to local QA evaluation when backend evaluation is unavailable',
   render(<App />);
   submitLocale('ko-KR');
 
-  expect(await screen.findByText(/GenAI-Assisted Locale QA/i)).toBeInTheDocument();
+  expect(await screen.findByText('deterministic-local')).toBeInTheDocument();
   expectTextContentContains('Evaluation Service');
   expectTextContentContains('deterministic-local');
   expectTextContentContains('AI review is temporarily unavailable because the evaluation service could not be reached, so the app is using deterministic checks.');
