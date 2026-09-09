@@ -203,20 +203,20 @@ export function getStaticMessagesForLocale(inputLocale, customerFallbacks = {}) 
   };
 }
 
-function getRegionName(locale) {
+function getRegionName(locale, displayLocales = getDisplayNamesLocale(locale)) {
   try {
     const region = new Intl.Locale(locale).maximize().region;
-    const displayNames = new Intl.DisplayNames(getDisplayNamesLocale(locale), { type: 'region' });
+    const displayNames = new Intl.DisplayNames(displayLocales, { type: 'region' });
     return displayNames.of(region) || region;
   } catch {
     return 'N/A';
   }
 }
 
-function getLanguageName(locale) {
+function getLanguageName(locale, displayLocales = getDisplayNamesLocale(locale)) {
   try {
     const language = locale.split('-')[0];
-    return new Intl.DisplayNames(getDisplayNamesLocale(locale), { type: 'language' }).of(language) || language;
+    return new Intl.DisplayNames(displayLocales, { type: 'language' }).of(language) || language;
   } catch {
     return locale;
   }
@@ -299,6 +299,67 @@ function getTimePattern(locale, date) {
   }
 }
 
+function getNumberPattern(locale, options = {}) {
+  try {
+    const formatter = new Intl.NumberFormat(locale, options);
+    const resolvedOptions = formatter.resolvedOptions();
+    const formattedParts = formatter.formatToParts(1234567890);
+    const integerParts = formattedParts
+      .filter(({ type }) => type === 'integer')
+      .map(({ value }) => Array.from(value).length);
+    const hasGrouping = formattedParts.some(({ type }) => type === 'group');
+    const primaryGroupSize = integerParts.at(-1) || 1;
+    const secondaryGroupSize = integerParts.length > 2
+      ? integerParts.at(-2)
+      : primaryGroupSize;
+    const groupedIntegerPattern = secondaryGroupSize === primaryGroupSize
+      ? `#,${'#'.repeat(Math.max(0, primaryGroupSize - 1))}0`
+      : `#,${'#'.repeat(secondaryGroupSize)},${'#'.repeat(Math.max(0, primaryGroupSize - 1))}0`;
+    const integerPattern = hasGrouping ? groupedIntegerPattern : '0';
+    const fractionPattern = resolvedOptions.maximumFractionDigits > 0
+      ? `.${'0'.repeat(resolvedOptions.minimumFractionDigits)}${'#'.repeat(
+          resolvedOptions.maximumFractionDigits - resolvedOptions.minimumFractionDigits
+        )}`
+      : '';
+    const numericPattern = `${integerPattern}${fractionPattern}`;
+
+    if (resolvedOptions.style !== 'percent') {
+      return numericPattern;
+    }
+
+    let includedNumber = false;
+    return formatter
+      .formatToParts(0.8)
+      .map(({ type, value }) => {
+        if (type === 'integer' || type === 'group' || type === 'decimal' || type === 'fraction') {
+          if (includedNumber) return '';
+          includedNumber = true;
+          return numericPattern;
+        }
+        if (type === 'percentSign') return '%';
+        if (type === 'literal') {
+          return value
+            .replace(/[\u061c\u200e\u200f]/g, '')
+            .replace(/[\u00a0\u202f]/g, ' ');
+        }
+        return value;
+      })
+      .join('')
+      .trim();
+  } catch {
+    return '';
+  }
+}
+
+function getPluralPreviewCategories(locale) {
+  try {
+    const rules = new Intl.PluralRules(locale);
+    return [1, 3, 5].map((count) => rules.select(count));
+  } catch {
+    return [];
+  }
+}
+
 function getFirstDayOfWeek(regionLocale) {
   try {
     const localeInfo = new Intl.Locale(regionLocale);
@@ -377,6 +438,15 @@ export function buildPreparedLocaleBundle({
     now.getDate() * 100 +
     Math.floor(year / 10) * 10 +
     year / 100;
+  const numberOptions = {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  };
+  const percentOptions = {
+    style: 'percent',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  };
 
   return {
     inputLocale: localeUsed,
@@ -416,7 +486,9 @@ export function buildPreparedLocaleBundle({
         : '',
     values: {
       languageName: getLanguageName(localeUsed),
+      languageNameEnglish: getLanguageName(localeUsed, ['en-US']),
       regionName: getRegionName(localeUsed),
+      regionNameEnglish: getRegionName(localeUsed, ['en-US']),
       currentDate: now.toLocaleString(formattingLocale, {
         year: 'numeric',
         month: 'long',
@@ -434,15 +506,10 @@ export function buildPreparedLocaleBundle({
         month: 'long',
         day: 'numeric'
       }),
-      formattedNumber: new Intl.NumberFormat(formattingLocale, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }).format(rawValue),
-      percentValue: new Intl.NumberFormat(formattingLocale, {
-        style: 'percent',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(0.8),
+      formattedNumber: new Intl.NumberFormat(formattingLocale, numberOptions).format(rawValue),
+      numberPattern: getNumberPattern(formattingLocale, numberOptions),
+      percentValue: new Intl.NumberFormat(formattingLocale, percentOptions).format(0.8),
+      percentPattern: getNumberPattern(formattingLocale, percentOptions),
       firstDayOfWeek: getFirstDayOfWeek(formattingLocale),
       firstDayOfWeekEnglish: getWeekdayName(
         getFirstDayOfWeekIndex(formattingLocale),
@@ -450,6 +517,7 @@ export function buildPreparedLocaleBundle({
       ),
       firstDayOfWeekIndex: getFirstDayOfWeekIndex(formattingLocale),
       pluralRuleSignature: getPluralRuleSignature(localeUsed),
+      pluralPreviewCategories: getPluralPreviewCategories(localeUsed),
       pluralMessage: buildPluralPreviewMessage(
         mergedMessages.pluralSentence,
         localeUsed

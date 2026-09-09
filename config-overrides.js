@@ -2,10 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const webpack = require('webpack');
 
-const optimizedIcu4xWasm = path.resolve(
-  __dirname,
-  'vendor/icu4x/2.2.0/icu_capi.wasm'
-);
+const optimizedIcu4xWasmByPackage = {
+  'icu4x-2-0': path.resolve(__dirname, 'vendor/icu4x/2.0.0/icu_capi.wasm'),
+  'icu4x-2-1': path.resolve(__dirname, 'vendor/icu4x/2.1.0/icu_capi.wasm'),
+  'icu4x-2-2': path.resolve(__dirname, 'vendor/icu4x/2.2.0/icu_capi.wasm')
+};
 
 module.exports = function override(config) {
   config.resolve.fallback = {
@@ -18,16 +19,20 @@ module.exports = function override(config) {
     topLevelAwait: true
   };
 
-  if (
-    process.env.ICU4X_USE_FULL_WASM !== '1' &&
-    fs.existsSync(optimizedIcu4xWasm)
-  ) {
+  if (process.env.ICU4X_USE_FULL_WASM !== '1') {
     config.plugins.push(
       new webpack.NormalModuleReplacementPlugin(/icu_capi\.wasm$/, (resource) => {
         const normalizedContext = (resource.context || '').split(path.sep).join('/');
+        const packageName = Object.keys(optimizedIcu4xWasmByPackage).find((name) =>
+          normalizedContext.endsWith(`/node_modules/${name}`)
+        );
 
-        if (normalizedContext.endsWith('/node_modules/icu4x-2-2')) {
-          resource.request = optimizedIcu4xWasm;
+        if (packageName) {
+          const optimizedWasm = optimizedIcu4xWasmByPackage[packageName];
+
+          if (fs.existsSync(optimizedWasm)) {
+            resource.request = optimizedWasm;
+          }
         }
       })
     );

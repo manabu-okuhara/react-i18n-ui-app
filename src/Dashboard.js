@@ -35,7 +35,7 @@ function getLanguageName(locale) {
   }
 }
 
-function renderPluralMessage(message) {
+function renderPluralLine(message) {
   if (!message) {
     return '';
   }
@@ -72,6 +72,22 @@ function renderPluralMessage(message) {
   }
 
   return segments;
+}
+
+function renderPluralMessage(message, categories = []) {
+  if (!message) {
+    return '';
+  }
+
+  return message.split('\n').map((line, index, lines) => (
+    <React.Fragment key={`plural-line-${index}`}>
+      {renderPluralLine(line)}
+      {index > 0 && categories[index - 1] ? (
+        <span dir="ltr"> ({categories[index - 1]})</span>
+      ) : null}
+      {index < lines.length - 1 ? '\n' : null}
+    </React.Fragment>
+  ));
 }
 
 
@@ -190,6 +206,22 @@ function appendEnglishWeekday(value, englishValue) {
     : value;
 }
 
+function renderDisplayName(value, englishValue) {
+  const showEnglishValue = value && englishValue && value !== englishValue;
+
+  return (
+    <>
+      <bdi>{value}</bdi>
+      {showEnglishValue ? (
+        <>
+          {' '}
+          <span dir="ltr">(<bdi>{englishValue}</bdi>)</span>
+        </>
+      ) : null}
+    </>
+  );
+}
+
 function getComparisonRows(preparedBundle, comparisonBundle) {
   if (!preparedBundle || !comparisonBundle) {
     return [];
@@ -205,14 +237,20 @@ function getComparisonRows(preparedBundle, comparisonBundle) {
       id: 'language',
       label: 'Language',
       selectedValue: preparedBundle.values.languageName,
+      selectedEnglishValue: preparedBundle.values.languageNameEnglish,
       baselineValue: comparisonBundle.values.languageName,
+      baselineEnglishValue: comparisonBundle.values.languageNameEnglish,
+      displayName: true,
       compareMode: 'informational'
     },
     {
       id: 'region',
       label: 'Region',
       selectedValue: preparedBundle.values.regionName,
+      selectedEnglishValue: preparedBundle.values.regionNameEnglish,
       baselineValue: comparisonBundle.values.regionName,
+      baselineEnglishValue: comparisonBundle.values.regionNameEnglish,
+      displayName: true,
       compareMode: 'informational'
     },
     {
@@ -231,15 +269,27 @@ function getComparisonRows(preparedBundle, comparisonBundle) {
     {
       id: 'number',
       label: 'Number',
-      selectedValue: preparedBundle.values.formattedNumber,
-      baselineValue: comparisonBundle.values.formattedNumber,
+      selectedValue: appendParenthetical(
+        preparedBundle.values.formattedNumber,
+        preparedBundle.values.numberPattern
+      ),
+      baselineValue: appendParenthetical(
+        comparisonBundle.values.formattedNumber,
+        comparisonBundle.values.numberPattern
+      ),
       compareMode: 'display'
     },
     {
       id: 'percent',
       label: 'Percent',
-      selectedValue: preparedBundle.values.percentValue,
-      baselineValue: comparisonBundle.values.percentValue,
+      selectedValue: appendParenthetical(
+        preparedBundle.values.percentValue,
+        preparedBundle.values.percentPattern
+      ),
+      baselineValue: appendParenthetical(
+        comparisonBundle.values.percentValue,
+        comparisonBundle.values.percentPattern
+      ),
       compareMode: 'display'
     },
     {
@@ -258,6 +308,8 @@ function getComparisonRows(preparedBundle, comparisonBundle) {
       label: 'Plural Examples',
       selectedValue: preparedBundle.values.pluralMessage,
       baselineValue: comparisonBundle.values.pluralMessage,
+      selectedCategories: preparedBundle.values.pluralPreviewCategories,
+      baselineCategories: comparisonBundle.values.pluralPreviewCategories,
       multiline: true,
       compareMode: 'semantic',
       semanticDiffers: selectedPluralSignature !== baselinePluralSignature
@@ -687,7 +739,11 @@ function Dashboard() {
                           ...(row.multiline ? styles.comparisonMultilineValue : null)
                         }}
                       >
-                        {row.multiline ? renderPluralMessage(row.selectedValue) : row.selectedValue}
+                        {row.multiline
+                          ? renderPluralMessage(row.selectedValue, row.selectedCategories)
+                          : row.displayName
+                            ? renderDisplayName(row.selectedValue, row.selectedEnglishValue)
+                            : row.selectedValue}
                       </div>
                       <div
                         data-testid={`comparison-cell-${row.id}-baseline`}
@@ -699,7 +755,11 @@ function Dashboard() {
                           ...(row.multiline ? styles.comparisonMultilineValue : null)
                         }}
                       >
-                        {row.multiline ? renderPluralMessage(row.baselineValue) : row.baselineValue}
+                        {row.multiline
+                          ? renderPluralMessage(row.baselineValue, row.baselineCategories)
+                          : row.displayName
+                            ? renderDisplayName(row.baselineValue, row.baselineEnglishValue)
+                            : row.baselineValue}
                       </div>
                     </React.Fragment>
                   );

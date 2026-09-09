@@ -20,7 +20,10 @@
     "start": "react-app-rewired start",
     "prebuild": "npm run verify:icu4x-wasm",
     "build": "react-app-rewired build",
-    "build:icu4x-wasm": "bash scripts/build-icu4x-wasm.sh",
+    "build:icu4x-wasm": "bash scripts/build-icu4x-wasm.sh all",
+    "build:icu4x-wasm:2.0": "bash scripts/build-icu4x-wasm.sh 2.0.0",
+    "build:icu4x-wasm:2.1": "bash scripts/build-icu4x-wasm.sh 2.1.0",
+    "build:icu4x-wasm:2.2": "bash scripts/build-icu4x-wasm.sh 2.2.0",
     "verify:icu4x-wasm": "node scripts/verifyIcu4xWasm.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

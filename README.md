@@ -12,9 +12,9 @@ The comparison includes:
 
 - language and region names
 - localized date and time, with an inferred date/time field pattern
-- locale-aware numbers and percentages
+- locale-aware numbers and percentages, with inferred number-format patterns
 - first day of week, including its English name where useful
-- fixed ICU plural examples for `1`, `3`, and `5`
+- fixed ICU plural examples for `1`, `3`, and `5`, annotated with the selected plural category
 
 Values that differ from the en-US baseline use a soft amber background. Language and region are informational and are not marked as differences because they naturally vary by locale.
 
@@ -35,6 +35,8 @@ en-US: September 7, 2026 at 12:48 AM (MMMMdy hh:mm a)
 
 JavaScript uses ICU through the runtime, but it does not expose the exact underlying ICU pattern. The displayed annotation is therefore an explanatory field pattern, not a direct ICU pattern value.
 
+Number and percent rows follow the same convention, such as `90,820.26 (#,##0.00)` and `80% (#,##0%)`. Each plural example shows its resolved ICU plural category, such as `(one)`, `(few)`, or `(other)`.
+
 ## Implemented capabilities
 
 ### Locale rendering and fallback
@@ -43,8 +45,9 @@ JavaScript uses ICU through the runtime, but it does not expose the exact underl
 - Dynamic translation fallback for unsupported locales
 - Language-only and mixed-locale resolution
 - Locale-aware formatting using JavaScript `Intl`
+- Localized language and region names with non-duplicated English equivalents
 - ICU4X 2.2.0 WebAssembly date/time formatting for the selected locale and en-US comparison
-- Application-owned ICU4X 2.2.0 date/time WASM build with unrelated components removed
+- Application-owned ICU4X 2.0.0–2.2.0 date/time WASM builds with unrelated components removed
 - Lazy-loaded ICU4X 2.0.0 and 2.1.0 comparison engines
 - ICU Message Format-style plural examples
 - Shared timestamps for fair selected-locale and en-US comparisons
@@ -113,23 +116,24 @@ Responsibilities:
 - QA panel rendering
 - local deterministic QA fallback
 
-`config-overrides.js` adds the minimal Create React App webpack settings required by the official ICU4X JavaScript/WebAssembly package. It disables the package's unreachable browser-side `fs` resolution, enables asynchronous WebAssembly with top-level await, and replaces only the ICU4X 2.2.0 package WASM with the verified feature-sliced artifact in [`vendor/icu4x/2.2.0`](vendor/icu4x/2.2.0). Set `ICU4X_USE_FULL_WASM=1` to restore the official full package artifact for troubleshooting.
+`config-overrides.js` adds the minimal Create React App webpack settings required by the official ICU4X JavaScript/WebAssembly packages. It disables the packages' unreachable browser-side `fs` resolution, enables asynchronous WebAssembly with top-level await, and replaces the ICU4X 2.0.0–2.2.0 package WASM files with their verified feature-sliced artifacts in [`vendor/icu4x`](vendor/icu4x). Set `ICU4X_USE_FULL_WASM=1` to restore all three official full package artifacts for troubleshooting.
 
 ### ICU4X WebAssembly build
 
-The default ICU4X 2.2.0 artifact is built from the pinned upstream source commit with Rust 1.93.1 and these features:
+Each artifact is built from a pinned upstream source commit with its release-era Rust toolchain and the same minimal feature set:
 
 ```text
 std,compiled_data,datetime,locale
 ```
 
-This preserves the locale parsing and date/time APIs used by the app while removing unrelated ICU4X components. The artifact is checked against its committed SHA-256 digest and required WASM exports before local startup or production builds.
+This preserves the locale parsing and date/time APIs used by the app while removing unrelated ICU4X components. The artifacts are checked against their committed SHA-256 digests and required WASM exports before local startup or production builds.
 
-| ICU4X 2.2.0 artifact | Uncompressed size | Approximate gzip size |
-| --- | ---: | ---: |
-| Official full npm WASM | 16,423,917 bytes | 6,479,075 bytes |
-| App date/time WASM | 5,225,659 bytes | 1,552,121 bytes |
-| Reduction | 68.2% | 76.0% |
+| ICU4X version | Official npm WASM | App date/time WASM | Uncompressed reduction | Approximate gzip reduction |
+| --- | ---: | ---: | ---: | ---: |
+| 2.0.0 / CLDR 47 | 12,263,559 bytes | 5,089,334 bytes | 58.5% | 70.5% |
+| 2.1.0 / CLDR 48 | 15,706,643 bytes | 5,218,682 bytes | 66.8% | 75.7% |
+| 2.2.0 / CLDR 48.2 | 16,423,917 bytes | 5,225,659 bytes | 68.2% | 76.0% |
+| **Total** | **44,394,119 bytes** | **15,533,675 bytes** | **65.0%** | **74.3%** |
 
 The build still contains ICU4X's compiled locale data. Filtering that data to a product-owned locale allowlist remains a separate follow-up because it requires a custom data provider or generated baked-data crate.
 
@@ -179,7 +183,7 @@ Never commit an API key to the repository.
 
 - Node.js 20 or newer
 - npm
-- Rustup and Rust 1.93.1 only when regenerating the custom ICU4X WASM artifact
+- Rustup and the pinned Rust 1.86.0, 1.90.0, and 1.93.1 toolchains only when regenerating the custom ICU4X WASM artifacts
 
 ### Install and run
 
@@ -198,11 +202,13 @@ npm run verify:icu4x-wasm
 npm run build
 ```
 
-To regenerate the pinned ICU4X artifact from official source:
+To regenerate the pinned ICU4X artifacts from official source:
 
 ```bash
 npm run build:icu4x-wasm
 ```
+
+Individual versions can also be regenerated with `build:icu4x-wasm:2.0`, `build:icu4x-wasm:2.1`, or `build:icu4x-wasm:2.2`.
 
 Automated coverage includes:
 
@@ -211,7 +217,9 @@ Automated coverage includes:
 - input submission by Enter, blur, button, and voice
 - en-US comparison rendering and difference colors
 - semantic weekday and plural comparison
+- localized language and region display names, including RTL isolation
 - locale date/time pattern annotations
+- number, percent, and plural-category annotations
 - deterministic and AI-service QA behavior
 - English operational UI across selected locales
 
@@ -255,7 +263,7 @@ The application is a demo and prototype rather than a complete production locali
 
 The ICU4X experiment uses a pinned, preloaded 2.2.0 engine with CLDR 48.2. ICU4X 2.0.0/CLDR 47 and 2.1.0/CLDR 48 are loaded only when selected. Both comparison columns use the same selected engine. ICU4X 1.4/CLDR 44 and 1.5/CLDR 45 remain visible as unavailable roadmap entries until reproducible custom WASM artifacts are added.
 
-The official full-data WASM files are approximately 12–16 MB each before transfer compression. The default 2.2 engine now uses the 5.2 MB feature-sliced artifact and begins loading in the background at application startup; older 2.x files are requested only after selection and still use the official full artifacts. A production follow-up should filter locale data and evaluate whether historical engines should receive their own custom builds.
+The official full-data WASM files are approximately 12–16 MB each before transfer compression. All three selectable 2.x engines now use 5.1–5.2 MB feature-sliced artifacts. The default 2.2 engine begins loading in the background at application startup, while the historical engines are requested only after selection. A production follow-up should filter locale data to reduce the artifacts further.
 
 ## Project positioning
 
