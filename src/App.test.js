@@ -565,14 +565,37 @@ test('shows a side-by-side locale comparison card with en-US baseline values', a
   expectTextContentContains('Highlighted values differ from the en-US baseline.');
   expectTextContentContains('Selected Locale: ja-JP');
   expectTextContentContains('en-US Baseline');
-  expect(screen.getByTestId('comparison-cell-language-selected')).toHaveTextContent('日本語');
+  expect(screen.getByTestId('comparison-cell-language-selected')).toHaveTextContent('日本語 (Japanese)');
+  expect(screen.getByTestId('comparison-cell-region-selected')).toHaveTextContent('日本 (Japan)');
   expect(screen.getByTestId('comparison-cell-language-baseline')).toHaveTextContent('English');
+  expect(screen.getByTestId('comparison-cell-language-baseline')).not.toHaveTextContent('English (English)');
+  expect(screen.getByTestId('comparison-cell-region-baseline')).toHaveTextContent('United States');
+  expect(screen.getByTestId('comparison-cell-region-baseline')).not.toHaveTextContent('United States (United States)');
   expect(screen.getByTestId('comparison-cell-date-time-selected')).toHaveTextContent(/\(yMd H{1,2}:mm\)/);
+  expect(screen.getByTestId('comparison-cell-number-selected')).toHaveTextContent('(#,##0.00)');
+  expect(screen.getByTestId('comparison-cell-percent-selected')).toHaveTextContent('(#,##0%)');
   expect(screen.getByTestId('comparison-cell-first-day-selected')).toHaveTextContent('日曜日 (Sunday)');
   expect(screen.getByTestId('comparison-cell-date-time-baseline')).toHaveTextContent(/\([^)]*h{1,2}:mm a\)/);
+  expect(screen.getByTestId('comparison-cell-plurals-selected')).toHaveTextContent('(other)');
+  expect(screen.getByTestId('comparison-cell-plurals-baseline')).toHaveTextContent('(one)');
+  expect(screen.getByTestId('comparison-cell-plurals-baseline')).toHaveTextContent('(other)');
   expect(screen.getByTestId('comparison-cell-plurals-selected').textContent).not.toContain('<accent>');
   expect(screen.getByLabelText('Locale Comparison')).toHaveAttribute('dir', 'ltr');
   expect(screen.getByTestId('comparison-cell-date-time-selected')).toHaveAttribute('dir', 'auto');
+});
+
+test('isolates English display-name annotations inside RTL locale values', async () => {
+  render(<App />);
+  submitLocale('ar-EG');
+
+  const languageCell = await screen.findByTestId('comparison-cell-language-selected');
+  const regionCell = screen.getByTestId('comparison-cell-region-selected');
+
+  expect(languageCell).toHaveTextContent(/\(Arabic\)/);
+  expect(regionCell).toHaveTextContent(/\(Egypt\)/);
+  expect(languageCell.querySelector('span[dir="ltr"]')).toBeInTheDocument();
+  expect(regionCell.querySelector('span[dir="ltr"]')).toBeInTheDocument();
+  expect(languageCell.querySelector('bdi')).toBeInTheDocument();
 });
 
 test('uses background colors to distinguish different and matching comparison values', async () => {
