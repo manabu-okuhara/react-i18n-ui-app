@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "icu4xVersion": "2.2.0",
+  "cldrVersion": "48.2",
+  "sourceTag": "icu@2.2.0",
+  "sourceCommit": "ed9cb2a8ac23f90c4042b369de43f1c998aa011c",
+  "rustToolchain": "1.93.1",
+  "features": [
+    "std",
+    "compiled_data",
+    "datetime",
+    "locale"
+  ],
+  "artifact": "icu_capi.wasm",
+  "bytes": 5225659,
+  "sha256": "d8effd2c9405ac09689c7381ec24fdac527d522d0da8aa4faa982741bddf652f",
+  "originalNpmBytes": 16423917,
+  "reductionPercent": 68.2,
+  "requiredExports": [
+    "diplomat_init",
+    "icu4x_Locale_from_string_mv1",
+    "icu4x_DateTimeFormatter_create_ymdt_mv1",
+    "icu4x_DateTimeFormatter_format_iso_mv1",
+    "icu4x_IsoDate_create_mv1",
+    "icu4x_Time_create_mv1"
+  ]
+}

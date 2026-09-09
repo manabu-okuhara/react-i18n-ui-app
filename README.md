@@ -44,6 +44,7 @@ JavaScript uses ICU through the runtime, but it does not expose the exact underl
 - Language-only and mixed-locale resolution
 - Locale-aware formatting using JavaScript `Intl`
 - ICU4X 2.2.0 WebAssembly date/time formatting for the selected locale and en-US comparison
+- Application-owned ICU4X 2.2.0 date/time WASM build with unrelated components removed
 - Lazy-loaded ICU4X 2.0.0 and 2.1.0 comparison engines
 - ICU Message Format-style plural examples
 - Shared timestamps for fair selected-locale and en-US comparisons
@@ -112,7 +113,25 @@ Responsibilities:
 - QA panel rendering
 - local deterministic QA fallback
 
-`config-overrides.js` adds the minimal Create React App webpack settings required by the official ICU4X JavaScript/WebAssembly package. It disables the package's unreachable browser-side `fs` resolution and enables asynchronous WebAssembly with top-level await.
+`config-overrides.js` adds the minimal Create React App webpack settings required by the official ICU4X JavaScript/WebAssembly package. It disables the package's unreachable browser-side `fs` resolution, enables asynchronous WebAssembly with top-level await, and replaces only the ICU4X 2.2.0 package WASM with the verified feature-sliced artifact in [`vendor/icu4x/2.2.0`](vendor/icu4x/2.2.0). Set `ICU4X_USE_FULL_WASM=1` to restore the official full package artifact for troubleshooting.
+
+### ICU4X WebAssembly build
+
+The default ICU4X 2.2.0 artifact is built from the pinned upstream source commit with Rust 1.93.1 and these features:
+
+```text
+std,compiled_data,datetime,locale
+```
+
+This preserves the locale parsing and date/time APIs used by the app while removing unrelated ICU4X components. The artifact is checked against its committed SHA-256 digest and required WASM exports before local startup or production builds.
+
+| ICU4X 2.2.0 artifact | Uncompressed size | Approximate gzip size |
+| --- | ---: | ---: |
+| Official full npm WASM | 16,423,917 bytes | 6,479,075 bytes |
+| App date/time WASM | 5,225,659 bytes | 1,552,121 bytes |
+| Reduction | 68.2% | 76.0% |
+
+The build still contains ICU4X's compiled locale data. Filtering that data to a product-owned locale allowlist remains a separate follow-up because it requires a custom data provider or generated baked-data crate.
 
 ### Backend services
 
@@ -160,6 +179,7 @@ Never commit an API key to the repository.
 
 - Node.js 20 or newer
 - npm
+- Rustup and Rust 1.93.1 only when regenerating the custom ICU4X WASM artifact
 
 ### Install and run
 
@@ -174,7 +194,14 @@ The Create React App development server runs at [http://localhost:3000](http://l
 
 ```bash
 npm test -- --watchAll=false
+npm run verify:icu4x-wasm
 npm run build
+```
+
+To regenerate the pinned ICU4X artifact from official source:
+
+```bash
+npm run build:icu4x-wasm
 ```
 
 Automated coverage includes:
@@ -219,7 +246,7 @@ The application is a demo and prototype rather than a complete production locali
 - expand the ICU4X WebAssembly proof of concept beyond date/time formatting
 - build and publish application-owned ICU4X 1.4/1.5 WASM artifacts, which are not available through the current official `icu` npm package history
 - add ICU4X 2.3.x after validating its release data and comparison behavior
-- selective ICU4X locale-data packaging and bundle-size measurement
+- selective ICU4X locale-data packaging using a custom provider or baked-data crate
 - AI-assisted remediation and locale-bundle draft generation
 - moderation and safety checks for generated locale content
 - localization incident triage and auto-fix workflows
@@ -228,7 +255,7 @@ The application is a demo and prototype rather than a complete production locali
 
 The ICU4X experiment uses a pinned, preloaded 2.2.0 engine with CLDR 48.2. ICU4X 2.0.0/CLDR 47 and 2.1.0/CLDR 48 are loaded only when selected. Both comparison columns use the same selected engine. ICU4X 1.4/CLDR 44 and 1.5/CLDR 45 remain visible as unavailable roadmap entries until reproducible custom WASM artifacts are added.
 
-The official full-data WASM files are approximately 12–16 MB each before transfer compression. The default 2.2 engine begins loading in the background at application startup; older 2.x files are requested only after selection. A production follow-up should generate feature- and locale-filtered artifacts before enabling more historical versions.
+The official full-data WASM files are approximately 12–16 MB each before transfer compression. The default 2.2 engine now uses the 5.2 MB feature-sliced artifact and begins loading in the background at application startup; older 2.x files are requested only after selection and still use the official full artifacts. A production follow-up should filter locale data and evaluate whether historical engines should receive their own custom builds.
 
 ## Project positioning
 

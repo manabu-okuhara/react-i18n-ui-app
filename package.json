@@ -16,8 +16,12 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "prestart": "npm run verify:icu4x-wasm",
     "start": "react-app-rewired start",
+    "prebuild": "npm run verify:icu4x-wasm",
     "build": "react-app-rewired build",
+    "build:icu4x-wasm": "bash scripts/build-icu4x-wasm.sh",
+    "verify:icu4x-wasm": "node scripts/verifyIcu4xWasm.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
