@@ -39,12 +39,24 @@ function evaluatePreparedBundle(bundle, serviceMeta = { mode: 'deterministic-ser
 
   if (bundle.formattingEngine) {
     const engine = bundle.formattingEngine;
+    const scopeLabels = {
+      'date-time': 'date/time',
+      'percent-number': 'percent digits'
+    };
+    const scopes = (Array.isArray(engine.scope) ? engine.scope : [engine.scope])
+      .filter(Boolean)
+      .map((scope) => scopeLabels[scope] || scope)
+      .join(', ');
+    const percentAffixDetail = engine.percentAffixSource
+      ? `; percent affix from ${engine.percentAffixSource}`
+      : '';
     checks.push({
-      id: 'date-time-engine',
-      label: 'Date/Time Engine',
+      id: 'formatting-engine',
+      label: 'Formatting Engine',
       status: engine.status === 'active' ? 'pass' : 'warn',
       detail: engine.status === 'active'
-        ? `${engine.name} ${engine.version} / CLDR ${engine.cldrVersion}`
+        ? `${engine.name} ${engine.version} / CLDR ${engine.cldrVersion} ` +
+          `(${scopes}${percentAffixDetail})`
         : `Browser Intl fallback requested by ICU4X ${engine.version}`
     });
   }

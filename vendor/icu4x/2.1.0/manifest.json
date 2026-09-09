@@ -9,19 +9,28 @@
     "std",
     "compiled_data",
     "datetime",
-    "locale"
+    "decimal",
+    "locale",
+    "plurals"
   ],
   "artifact": "icu_capi.wasm",
-  "bytes": 5218682,
-  "sha256": "5715df954dc83b8aa33ce921cb66337bff8ece8710e2a6d7b4b2723ea17dc3bb",
+  "bytes": 5263935,
+  "sha256": "f71e37dd7d00efc08d85eb08f66948732deff278abac3ac47f80cad839c75fda",
   "originalNpmBytes": 15706643,
-  "reductionPercent": 66.8,
+  "reductionPercent": 66.5,
   "requiredExports": [
     "diplomat_init",
     "icu4x_Locale_from_string_mv1",
     "icu4x_DateTimeFormatter_create_ymdt_mv1",
     "icu4x_DateTimeFormatter_format_iso_mv1",
     "icu4x_IsoDate_create_mv1",
-    "icu4x_Time_create_mv1"
+    "icu4x_Time_create_mv1",
+    "icu4x_Decimal_from_string_mv1",
+    "icu4x_DecimalFormatter_create_with_grouping_strategy_mv1",
+    "icu4x_DecimalFormatter_format_mv1",
+    "icu4x_PluralOperands_from_string_mv1",
+    "icu4x_PluralRules_create_cardinal_mv1",
+    "icu4x_PluralRules_category_for_mv1",
+    "icu4x_PluralRules_categories_mv1"
   ]
 }

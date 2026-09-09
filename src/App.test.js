@@ -1,6 +1,11 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import App from './App';
-import { BASE_MESSAGES, buildPreparedLocaleBundle, prepareLocaleBundle } from './translateLocaleBundle';
+import {
+  BASE_MESSAGES,
+  buildPluralPreviewMessage,
+  buildPreparedLocaleBundle,
+  prepareLocaleBundle
+} from './translateLocaleBundle';
 import LocaleQaPanel from './components/LocaleQaPanel';
 import { evaluatePreparedBundle } from './localeQa';
 
@@ -20,7 +25,7 @@ jest.mock('./icu4x/icu4xLoader', () => {
   return {
     getLoadedIcu4xEngine: () => engine,
     loadIcu4xEngine: () => Promise.resolve(engine),
-    applyIcu4xDateTime: (bundle, activeEngine) => {
+    applyIcu4xFormatting: (bundle, activeEngine) => {
       if (!bundle || !activeEngine) return bundle;
 
       return {
@@ -29,7 +34,9 @@ jest.mock('./icu4x/icu4xLoader', () => {
           name: 'ICU4X',
           version: activeEngine.version,
           cldrVersion: activeEngine.cldrVersion,
-          scope: 'date-time',
+          scope: ['date-time', 'number', 'percent-number', 'plural'],
+          fallbackScope: [],
+          percentAffixSource: 'Browser Intl',
           status: 'active'
         },
         values: {
@@ -111,7 +118,7 @@ test('renders the prompt before locale preparation', () => {
 test('shows pinned ICU4X versions and disables engines that need custom WASM builds', () => {
   render(<App />);
 
-  const selector = screen.getByLabelText('Date/time engine');
+  const selector = screen.getByLabelText('Formatting engine');
   expect(selector).toHaveValue('2.2.0');
   expect(screen.getByRole('option', { name: 'ICU4X 2.2.0 / CLDR 48.2' })).toBeEnabled();
   expect(screen.getByRole('option', {
@@ -144,7 +151,9 @@ test('includes the active ICU4X and CLDR versions in deterministic QA', () => {
       name: 'ICU4X',
       version: '2.1.0',
       cldrVersion: '48',
-      scope: 'date-time',
+      scope: ['date-time', 'number', 'percent-number', 'plural'],
+      fallbackScope: [],
+      percentAffixSource: 'Browser Intl',
       status: 'active'
     }
   };
@@ -152,9 +161,10 @@ test('includes the active ICU4X and CLDR versions in deterministic QA', () => {
   const result = evaluatePreparedBundle(bundle);
   expect(result.checks).toEqual(expect.arrayContaining([
     expect.objectContaining({
-      id: 'date-time-engine',
+      id: 'formatting-engine',
       status: 'pass',
-      detail: 'ICU4X 2.1.0 / CLDR 48'
+      detail: 'ICU4X 2.1.0 / CLDR 48 ' +
+        '(date/time, number, percent digits, plural; percent affix from Browser Intl)'
     })
   ]));
 });
@@ -521,6 +531,22 @@ test('limits plural preview output to the fixed example rows', () => {
   expect(lines[3]).toContain('5');
 });
 
+test('allows the active formatting engine to select plural categories', () => {
+  const preview = buildPluralPreviewMessage(
+    BASE_MESSAGES.pluralSentence,
+    'en-US',
+    () => 'one'
+  );
+  const lines = preview.split('\n');
+
+  expect(lines).toHaveLength(4);
+  expect(lines.slice(1)).toEqual(expect.arrayContaining([
+    expect.stringContaining('There is 1'),
+    expect.stringContaining('There is 3'),
+    expect.stringContaining('There is 5')
+  ]));
+});
+
 test('accepts locale input through browser speech recognition', async () => {
   let recognition;
 
@@ -580,6 +606,44 @@ test('shows a side-by-side locale comparison card with en-US baseline values', a
   expect(screen.getByTestId('comparison-cell-plurals-baseline')).toHaveTextContent('(one)');
   expect(screen.getByTestId('comparison-cell-plurals-baseline')).toHaveTextContent('(other)');
   expect(screen.getByTestId('comparison-cell-plurals-selected').textContent).not.toContain('<accent>');
+  expect(screen.getByTestId('comparison-source-language')).toHaveTextContent(
+    'Intl.DisplayNames · browser runtime'
+  );
+  expect(screen.getByTestId('comparison-source-region')).toHaveTextContent(
+    'Intl.DisplayNames · browser runtime'
+  );
+  expect(screen.getByTestId('comparison-source-date-time')).toHaveTextContent(
+    'Value: ICU4X 2.2.0 · CLDR 48.2'
+  );
+  expect(screen.getByTestId('comparison-source-date-time')).toHaveTextContent(
+    'Pattern: Intl.DateTimeFormat · browser runtime'
+  );
+  expect(screen.getByTestId('comparison-source-number')).toHaveTextContent(
+    'Value: ICU4X DecimalFormatter 2.2.0 · CLDR 48.2'
+  );
+  expect(screen.getByTestId('comparison-source-percent')).toHaveTextContent(
+    'Digits: ICU4X DecimalFormatter 2.2.0 · CLDR 48.2'
+  );
+  expect(screen.getByTestId('comparison-source-percent')).toHaveTextContent(
+    'Affix/Pattern: Intl.NumberFormat · browser runtime'
+  );
+  expect(screen.getByTestId('comparison-source-first-day')).toHaveTextContent(
+    'Rule: Intl.Locale weekInfo · browser runtime'
+  );
+  expect(screen.getByTestId('comparison-source-plurals')).toHaveTextContent(
+    'Category: ICU4X PluralRules 2.2.0 · CLDR 48.2'
+  );
+  expect(screen.getByTestId('comparison-source-plurals')).toHaveTextContent(
+    '# value: Intl.NumberFormat · browser runtime'
+  );
+  expect(screen.getByTestId('comparison-source-plurals')).toHaveTextContent(
+    'Message: app preview logic'
+  );
+  expect(screen.getByText('Value: ICU4X 2.2.0 · CLDR 48.2')).toHaveStyle({
+    backgroundColor: '#ede9fe'
+  });
+  expect(screen.getByTestId('comparison-cell-date-time-selected')).not.toHaveTextContent('ICU4X');
+  expect(screen.getByTestId('comparison-cell-date-time-baseline')).not.toHaveTextContent('ICU4X');
   expect(screen.getByLabelText('Locale Comparison')).toHaveAttribute('dir', 'ltr');
   expect(screen.getByTestId('comparison-cell-date-time-selected')).toHaveAttribute('dir', 'auto');
 });

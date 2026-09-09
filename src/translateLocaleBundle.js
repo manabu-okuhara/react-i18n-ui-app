@@ -141,12 +141,14 @@ function isRTLLocale(locale) {
   }
 }
 
-function formatPluralBlocks(message, locale, values) {
+function formatPluralBlocks(message, locale, values, selectPluralCategory) {
   return message.replace(
     /\{(\w+),\s*plural,\s*((?:\w+\s*{.+?}\s*)+)\}/g,
     (_match, variableName, rulesString) => {
       const count = values[variableName];
-      const rule = new Intl.PluralRules(locale).select(count);
+      const rule = selectPluralCategory
+        ? selectPluralCategory(count)
+        : new Intl.PluralRules(locale).select(count);
       const parts = rulesString.match(/(\w+)\s*{(.+?)}/g) || [];
       const ruleMap = {};
 
@@ -163,12 +165,17 @@ function formatPluralBlocks(message, locale, values) {
   );
 }
 
-export function formatMessage(message, values = {}, locale) {
+export function formatMessage(message, values = {}, locale, selectPluralCategory) {
   if (!message) {
     return '';
   }
 
-  const withPluralContent = formatPluralBlocks(message, locale, values);
+  const withPluralContent = formatPluralBlocks(
+    message,
+    locale,
+    values,
+    selectPluralCategory
+  );
 
   return withPluralContent.replace(/{(\w+)}/g, (match, key) => (
     values[key] !== undefined ? values[key] : match
@@ -176,7 +183,7 @@ export function formatMessage(message, values = {}, locale) {
 }
 
 
-function buildPluralPreviewMessage(message, locale) {
+export function buildPluralPreviewMessage(message, locale, selectPluralCategory) {
   const formattedMessage = formatMessage(
     message,
     {
@@ -185,7 +192,8 @@ function buildPluralPreviewMessage(message, locale) {
       exampleFive: 5,
       count: 1
     },
-    locale
+    locale,
+    selectPluralCategory
   );
 
   const lines = formattedMessage.split('\n');
@@ -507,8 +515,10 @@ export function buildPreparedLocaleBundle({
         day: 'numeric'
       }),
       formattedNumber: new Intl.NumberFormat(formattingLocale, numberOptions).format(rawValue),
+      numberRawValue: rawValue,
       numberPattern: getNumberPattern(formattingLocale, numberOptions),
       percentValue: new Intl.NumberFormat(formattingLocale, percentOptions).format(0.8),
+      percentRawValue: 0.8,
       percentPattern: getNumberPattern(formattingLocale, percentOptions),
       firstDayOfWeek: getFirstDayOfWeek(formattingLocale),
       firstDayOfWeekEnglish: getWeekdayName(
@@ -517,6 +527,7 @@ export function buildPreparedLocaleBundle({
       ),
       firstDayOfWeekIndex: getFirstDayOfWeekIndex(formattingLocale),
       pluralRuleSignature: getPluralRuleSignature(localeUsed),
+      pluralPreviewCounts: [1, 3, 5],
       pluralPreviewCategories: getPluralPreviewCategories(localeUsed),
       pluralMessage: buildPluralPreviewMessage(
         mergedMessages.pluralSentence,
