@@ -18,12 +18,14 @@ The comparison includes:
 
 Values that differ from the en-US baseline use a soft amber background. Language and region are informational and are not marked as differences because they naturally vary by locale.
 
+The first column also shows compact formatting-provenance badges without changing either value column. Purple badges identify the selected ICU4X/CLDR engine, blue badges identify browser `Intl` APIs, gray badges identify application-owned preview logic, and amber badges identify an ICU4X fallback. Browser `Intl` badges say `browser runtime` because browsers do not expose a reliable ICU or CLDR version through the JavaScript API.
+
 ### Semantic comparisons
 
 Not every translated value should be compared as raw text:
 
 - **First day of week** is compared by weekday index, so `日曜日 (Sunday)` and `Sunday` are treated as the same day.
-- **Plural behavior** is compared using representative `Intl.PluralRules` category selections rather than translated plural sentences.
+- **Plural behavior** is compared using representative ICU4X plural-category selections when the selected engine is active, with `Intl.PluralRules` as the fallback.
 - **Date, time, number, and percent** are compared by their rendered locale output.
 
 The date/time annotation is inferred from `Intl.DateTimeFormat.resolvedOptions()` and `formatToParts()`. For example:
@@ -46,8 +48,9 @@ Number and percent rows follow the same convention, such as `90,820.26 (#,##0.00
 - Language-only and mixed-locale resolution
 - Locale-aware formatting using JavaScript `Intl`
 - Localized language and region names with non-duplicated English equivalents
-- ICU4X 2.2.0 WebAssembly date/time formatting for the selected locale and en-US comparison
-- Application-owned ICU4X 2.0.0–2.2.0 date/time WASM builds with unrelated components removed
+- ICU4X 2.2.0 WebAssembly date/time, decimal, and plural formatting for the selected locale and en-US comparison
+- ICU4X-backed percent digits with browser `Intl` supplying percent-sign placement because the ICU4X 2.0–2.2 JavaScript bindings do not expose a percent formatter
+- Application-owned ICU4X 2.0.0–2.2.0 formatting WASM builds with unrelated components removed
 - Lazy-loaded ICU4X 2.0.0 and 2.1.0 comparison engines
 - ICU Message Format-style plural examples
 - Shared timestamps for fair selected-locale and en-US comparisons
@@ -123,17 +126,17 @@ Responsibilities:
 Each artifact is built from a pinned upstream source commit with its release-era Rust toolchain and the same minimal feature set:
 
 ```text
-std,compiled_data,datetime,locale
+std,compiled_data,datetime,decimal,locale,plurals
 ```
 
-This preserves the locale parsing and date/time APIs used by the app while removing unrelated ICU4X components. The artifacts are checked against their committed SHA-256 digests and required WASM exports before local startup or production builds.
+This preserves the locale parsing, date/time, decimal-formatting, and plural-rule APIs used by the app while removing unrelated ICU4X components. The artifacts are checked against their committed SHA-256 digests and required WASM exports before local startup or production builds.
 
-| ICU4X version | Official npm WASM | App date/time WASM | Uncompressed reduction | Approximate gzip reduction |
+| ICU4X version | Official npm WASM | App formatting WASM | Uncompressed reduction | Approximate gzip reduction |
 | --- | ---: | ---: | ---: | ---: |
-| 2.0.0 / CLDR 47 | 12,263,559 bytes | 5,089,334 bytes | 58.5% | 70.5% |
-| 2.1.0 / CLDR 48 | 15,706,643 bytes | 5,218,682 bytes | 66.8% | 75.7% |
-| 2.2.0 / CLDR 48.2 | 16,423,917 bytes | 5,225,659 bytes | 68.2% | 76.0% |
-| **Total** | **44,394,119 bytes** | **15,533,675 bytes** | **65.0%** | **74.3%** |
+| 2.0.0 / CLDR 47 | 12,263,559 bytes | 5,136,022 bytes | 58.1% | 70.3% |
+| 2.1.0 / CLDR 48 | 15,706,643 bytes | 5,263,935 bytes | 66.5% | 75.5% |
+| 2.2.0 / CLDR 48.2 | 16,423,917 bytes | 5,273,094 bytes | 67.9% | 75.9% |
+| **Total** | **44,394,119 bytes** | **15,673,051 bytes** | **64.7%** | **74.2%** |
 
 The build still contains ICU4X's compiled locale data. Filtering that data to a product-owned locale allowlist remains a separate follow-up because it requires a custom data provider or generated baked-data crate.
 
@@ -220,6 +223,7 @@ Automated coverage includes:
 - localized language and region display names, including RTL isolation
 - locale date/time pattern annotations
 - number, percent, and plural-category annotations
+- per-row ICU4X, CLDR, browser `Intl`, application-logic, and fallback provenance badges
 - deterministic and AI-service QA behavior
 - English operational UI across selected locales
 
@@ -251,7 +255,7 @@ This is a **continuous-localization quality guard**, not a complete bidirectiona
 
 The application is a demo and prototype rather than a complete production localization platform. Potential next steps include:
 
-- expand the ICU4X WebAssembly proof of concept beyond date/time formatting
+- adopt a native ICU4X percent formatter when one becomes available in the supported JavaScript bindings
 - build and publish application-owned ICU4X 1.4/1.5 WASM artifacts, which are not available through the current official `icu` npm package history
 - add ICU4X 2.3.x after validating its release data and comparison behavior
 - selective ICU4X locale-data packaging using a custom provider or baked-data crate
@@ -263,7 +267,7 @@ The application is a demo and prototype rather than a complete production locali
 
 The ICU4X experiment uses a pinned, preloaded 2.2.0 engine with CLDR 48.2. ICU4X 2.0.0/CLDR 47 and 2.1.0/CLDR 48 are loaded only when selected. Both comparison columns use the same selected engine. ICU4X 1.4/CLDR 44 and 1.5/CLDR 45 remain visible as unavailable roadmap entries until reproducible custom WASM artifacts are added.
 
-The official full-data WASM files are approximately 12–16 MB each before transfer compression. All three selectable 2.x engines now use 5.1–5.2 MB feature-sliced artifacts. The default 2.2 engine begins loading in the background at application startup, while the historical engines are requested only after selection. A production follow-up should filter locale data to reduce the artifacts further.
+The official full-data WASM files are approximately 12–16 MB each before transfer compression. All three selectable 2.x engines now use 5.1–5.3 MB feature-sliced artifacts. The default 2.2 engine begins loading in the background at application startup, while the historical engines are requested only after selection. A production follow-up should filter locale data to reduce the artifacts further.
 
 ## Project positioning
 

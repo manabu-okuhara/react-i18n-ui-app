@@ -11,7 +11,7 @@ import { requestLocaleBundle } from './localeBundleClient';
 import { evaluateLocaleBundle } from './localeQaClient';
 import LocaleQaPanel from './components/LocaleQaPanel';
 import {
-  applyIcu4xDateTime,
+  applyIcu4xFormatting,
   getLoadedIcu4xEngine,
   loadIcu4xEngine,
 } from './icu4x/icu4xLoader';
@@ -188,11 +188,14 @@ const COMPARISON_UI_MESSAGES = {
 };
 
 const ICU4X_UI_MESSAGES = {
-  label: 'Date/time engine',
+  label: 'Formatting engine',
   loading: (version) => `Loading ICU4X ${version}...`,
-  ready: (version, cldrVersion) => `ICU4X ${version} / CLDR ${cldrVersion}`,
+  ready: (version, cldrVersion) => (
+    `ICU4X ${version} / CLDR ${cldrVersion} — date/time, number, and plurals; ` +
+    'percent placement uses Browser Intl.'
+  ),
   fallback: 'ICU4X could not be loaded. Browser Intl formatting remains active.',
-  localeFallback: (version) => `ICU4X ${version} does not support this locale in the bundled data. Browser Intl is used for this value.`,
+  localeFallback: (version) => `ICU4X ${version} could not format every value for this locale. Browser Intl is used where needed.`,
   customBuild: 'custom WASM build required'
 };
 
@@ -222,6 +225,78 @@ function renderDisplayName(value, englishValue) {
   );
 }
 
+function getFormattingProvenance(bundle) {
+  const engine = bundle?.formattingEngine;
+  const activeScopes = new Set(
+    Array.isArray(engine?.scope) ? engine.scope : [engine?.scope].filter(Boolean)
+  );
+  const icuVersion = engine?.version;
+  const cldrVersion = engine?.cldrVersion;
+
+  const icuSource = (scope, aspect, component = '') => (
+    engine?.name === 'ICU4X' && activeScopes.has(scope)
+      ? {
+          kind: 'icu4x',
+          text: `${aspect}: ICU4X${component ? ` ${component}` : ''} ${icuVersion} · CLDR ${cldrVersion}`
+        }
+      : {
+          kind: 'fallback',
+          text: `${aspect}: Browser Intl fallback`
+        }
+  );
+  const intlSource = (text) => ({ kind: 'intl', text });
+  const appSource = (text) => ({ kind: 'app', text });
+
+  return {
+    language: [intlSource('Intl.DisplayNames · browser runtime')],
+    region: [intlSource('Intl.DisplayNames · browser runtime')],
+    dateTime: [
+      icuSource('date-time', 'Value'),
+      intlSource('Pattern: Intl.DateTimeFormat · browser runtime')
+    ],
+    number: [
+      icuSource('number', 'Value', 'DecimalFormatter'),
+      intlSource('Pattern: Intl.NumberFormat · browser runtime')
+    ],
+    percent: [
+      icuSource('percent-number', 'Digits', 'DecimalFormatter'),
+      intlSource('Affix/Pattern: Intl.NumberFormat · browser runtime')
+    ],
+    firstDay: [
+      intlSource('Rule: Intl.Locale weekInfo · browser runtime'),
+      intlSource('Label: Intl.DateTimeFormat · browser runtime')
+    ],
+    plurals: [
+      icuSource('plural', 'Category', 'PluralRules'),
+      intlSource('# value: Intl.NumberFormat · browser runtime'),
+      appSource('Message: app preview logic')
+    ]
+  };
+}
+
+function renderProvenanceBadges(row) {
+  return (
+    <div
+      data-testid={`comparison-source-${row.id}`}
+      aria-label={`${row.label} formatting sources`}
+      dir="ltr"
+      style={styles.provenanceList}
+    >
+      {row.provenance.map((source) => (
+        <span
+          key={source.text}
+          style={{
+            ...styles.provenanceBadge,
+            ...styles[`${source.kind}ProvenanceBadge`]
+          }}
+        >
+          {source.text}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function getComparisonRows(preparedBundle, comparisonBundle) {
   if (!preparedBundle || !comparisonBundle) {
     return [];
@@ -231,6 +306,7 @@ function getComparisonRows(preparedBundle, comparisonBundle) {
   const baselinePluralSignature = comparisonBundle.values?.pluralRuleSignature || getPluralRuleSignature(comparisonBundle.localeUsed);
   const selectedFirstDayIndex = preparedBundle.values?.firstDayOfWeekIndex ?? getFirstDayOfWeekIndex(preparedBundle.formattingLocale);
   const baselineFirstDayIndex = comparisonBundle.values?.firstDayOfWeekIndex ?? getFirstDayOfWeekIndex(comparisonBundle.formattingLocale);
+  const provenance = getFormattingProvenance(preparedBundle);
 
   return [
     {
@@ -240,6 +316,7 @@ function getComparisonRows(preparedBundle, comparisonBundle) {
       selectedEnglishValue: preparedBundle.values.languageNameEnglish,
       baselineValue: comparisonBundle.values.languageName,
       baselineEnglishValue: comparisonBundle.values.languageNameEnglish,
+      provenance: provenance.language,
       displayName: true,
       compareMode: 'informational'
     },
@@ -250,6 +327,7 @@ function getComparisonRows(preparedBundle, comparisonBundle) {
       selectedEnglishValue: preparedBundle.values.regionNameEnglish,
       baselineValue: comparisonBundle.values.regionName,
       baselineEnglishValue: comparisonBundle.values.regionNameEnglish,
+      provenance: provenance.region,
       displayName: true,
       compareMode: 'informational'
     },
@@ -264,6 +342,7 @@ function getComparisonRows(preparedBundle, comparisonBundle) {
         comparisonBundle.values.currentDate,
         comparisonBundle.values.dateTimePattern || comparisonBundle.values.datePattern
       ),
+      provenance: provenance.dateTime,
       compareMode: 'display'
     },
     {
@@ -277,6 +356,7 @@ function getComparisonRows(preparedBundle, comparisonBundle) {
         comparisonBundle.values.formattedNumber,
         comparisonBundle.values.numberPattern
       ),
+      provenance: provenance.number,
       compareMode: 'display'
     },
     {
@@ -290,6 +370,7 @@ function getComparisonRows(preparedBundle, comparisonBundle) {
         comparisonBundle.values.percentValue,
         comparisonBundle.values.percentPattern
       ),
+      provenance: provenance.percent,
       compareMode: 'display'
     },
     {
@@ -300,6 +381,7 @@ function getComparisonRows(preparedBundle, comparisonBundle) {
         preparedBundle.values.firstDayOfWeekEnglish
       ),
       baselineValue: comparisonBundle.values.firstDayOfWeek,
+      provenance: provenance.firstDay,
       compareMode: 'semantic',
       semanticDiffers: selectedFirstDayIndex !== baselineFirstDayIndex
     },
@@ -310,6 +392,7 @@ function getComparisonRows(preparedBundle, comparisonBundle) {
       baselineValue: comparisonBundle.values.pluralMessage,
       selectedCategories: preparedBundle.values.pluralPreviewCategories,
       baselineCategories: comparisonBundle.values.pluralPreviewCategories,
+      provenance: provenance.plurals,
       multiline: true,
       compareMode: 'semantic',
       semanticDiffers: selectedPluralSignature !== baselinePluralSignature
@@ -540,12 +623,12 @@ function Dashboard() {
   }, [preparedBundle]);
 
   const displayedPreparedBundle = useMemo(
-    () => applyIcu4xDateTime(preparedBundle, icu4xEngine),
+    () => applyIcu4xFormatting(preparedBundle, icu4xEngine),
     [preparedBundle, icu4xEngine]
   );
 
   const displayedComparisonBundle = useMemo(
-    () => applyIcu4xDateTime(comparisonBundle, icu4xEngine),
+    () => applyIcu4xFormatting(comparisonBundle, icu4xEngine),
     [comparisonBundle, icu4xEngine]
   );
 
@@ -585,8 +668,10 @@ function Dashboard() {
   );
 
   const selectedIcu4xMetadata = getIcu4xVersionOption(icu4xVersion);
-  const isLocaleFormattingFallback =
-    displayedPreparedBundle?.formattingEngine?.status === 'locale-fallback';
+  const isLocaleFormattingFallback = Boolean(
+    displayedPreparedBundle?.formattingEngine &&
+    displayedPreparedBundle.formattingEngine.status !== 'active'
+  );
 
   const warningMessage = preparedBundle?.warningMessage || '';
 
@@ -728,7 +813,10 @@ function Dashboard() {
                   const cellStyle = row.differs ? styles.comparisonDiffCell : styles.comparisonSameCell;
                   return (
                     <React.Fragment key={row.id}>
-                      <div style={styles.comparisonLabelCell}>{row.label}</div>
+                      <div style={styles.comparisonLabelCell}>
+                        <div style={styles.comparisonLabelTitle}>{row.label}</div>
+                        {renderProvenanceBadges(row)}
+                      </div>
                       <div
                         data-testid={`comparison-cell-${row.id}-selected`}
                         dir="auto"
@@ -976,6 +1064,49 @@ const styles = {
     fontWeight: 700,
     lineHeight: 1.4,
     color: '#111827'
+  },
+  comparisonLabelTitle: {
+    fontSize: '16px',
+    fontWeight: 700,
+    lineHeight: 1.4
+  },
+  provenanceList: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: '5px',
+    marginTop: '8px'
+  },
+  provenanceBadge: {
+    display: 'inline-block',
+    maxWidth: '100%',
+    padding: '3px 6px',
+    border: '1px solid',
+    borderRadius: '6px',
+    fontSize: '11px',
+    fontWeight: 600,
+    lineHeight: 1.3,
+    overflowWrap: 'anywhere'
+  },
+  icu4xProvenanceBadge: {
+    backgroundColor: '#ede9fe',
+    borderColor: '#c4b5fd',
+    color: '#5b21b6'
+  },
+  intlProvenanceBadge: {
+    backgroundColor: '#e0f2fe',
+    borderColor: '#7dd3fc',
+    color: '#075985'
+  },
+  appProvenanceBadge: {
+    backgroundColor: '#f3f4f6',
+    borderColor: '#d1d5db',
+    color: '#374151'
+  },
+  fallbackProvenanceBadge: {
+    backgroundColor: '#fff7ed',
+    borderColor: '#fdba74',
+    color: '#9a3412'
   },
   comparisonValueCell: {
     padding: '12px 14px',

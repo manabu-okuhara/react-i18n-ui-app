@@ -53,7 +53,7 @@ function verifyVersion(version, overridePath) {
   }
 
   console.log(
-    `Verified ICU4X ${manifest.icu4xVersion} date/time WASM ` +
+    `Verified ICU4X ${manifest.icu4xVersion} formatting WASM ` +
       `(${artifact.byteLength.toLocaleString('en-US')} bytes, ` +
       `${manifest.reductionPercent}% smaller).`
   );

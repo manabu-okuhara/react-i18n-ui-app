@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-FEATURES="std,compiled_data,datetime,locale"
+FEATURES="std,compiled_data,datetime,decimal,locale,plurals"
 SOURCE_ROOT="${ICU4X_SOURCE_ROOT:-${TMPDIR:-/tmp}/react-i18n-ui-app-icu4x-sources}"
 REQUESTED_VERSION="${1:-all}"
 TEMP_OUTPUTS=()
@@ -57,7 +57,7 @@ build_version() {
   local source_dir="${SOURCE_ROOT}/icu4x-${version}"
   local output_dir="${ROOT_DIR}/vendor/icu4x/${version}"
   local output_file="${output_dir}/icu_capi.wasm"
-  local temp_output="${TMPDIR:-/tmp}/icu4x-${version}-datetime.$$.wasm"
+  local temp_output="${TMPDIR:-/tmp}/icu4x-${version}-formatting.$$.wasm"
   local stripped_output="${temp_output}.stripped"
 
   if [[ "${REQUESTED_VERSION}" != "all" && -n "${ICU4X_SOURCE_DIR:-}" ]]; then
@@ -100,11 +100,11 @@ build_version() {
 
   node "${ROOT_DIR}/scripts/stripWasmNameSection.js" \
     "${temp_output}" "${stripped_output}"
-  node "${ROOT_DIR}/scripts/verifyIcu4xWasm.js" \
-    "${version}" "${stripped_output}"
-
   mkdir -p "${output_dir}"
   mv "${stripped_output}" "${output_file}"
+  node "${ROOT_DIR}/scripts/updateIcu4xWasmManifest.js" \
+    "${version}" "${output_file}"
+  node "${ROOT_DIR}/scripts/verifyIcu4xWasm.js" "${version}"
 
   echo "Generated ${output_file}"
 }
