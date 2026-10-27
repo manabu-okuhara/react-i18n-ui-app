@@ -229,10 +229,11 @@ Automated coverage includes:
 
 ## CI and continuous-localization workflow
 
-GitHub pull requests run two internationalization-focused workflows:
+The repository includes three internationalization-focused GitHub Actions workflows. Two run on pull requests, and one manually pushes reviewed English source strings to Lokalise:
 
 - [`.github/workflows/codex-i18n-review.yml`](.github/workflows/codex-i18n-review.yml)
 - [`.github/workflows/lokalise-duplicate-check.yml`](.github/workflows/lokalise-duplicate-check.yml)
+- [`.github/workflows/lokalise-push.yml`](.github/workflows/lokalise-push.yml)
 
 ### Codex i18n review
 
@@ -245,11 +246,15 @@ The Codex workflow:
 - safely exports multiline review output
 - produces a useful fallback report if the AI review cannot run
 
-### Lokalise duplicate guard
+### Lokalise continuous-localization integration
 
 The Lokalise workflow compares changed English source entries with the configured Lokalise project and reports duplicate keys or duplicate English values.
 
-This is a **continuous-localization quality guard**, not a complete bidirectional translation-sync pipeline. Lokalise credentials are supplied through GitHub Actions secrets.
+After reviewed source changes are merged, the **Push Source Locale to Lokalise** workflow can be started manually from GitHub Actions. It validates and uploads only [`src/locales/en-US.json`](src/locales/en-US.json), preserves application-owned placeholder syntax, detects ICU plural messages, and waits for Lokalise to finish processing the upload.
+
+The integration requires the GitHub Actions secrets `LOKALISE_API_TOKEN` and `LOKALISE_PROJECT_ID`, plus a repository variable named `LOKALISE_BASE_LANG_ISO`. The variable accepts `en`, `en_US`, or `en-US` case-insensitively. Before uploading, the workflow retrieves the project's base language and passes Lokalise's exact configured value to the push action.
+
+The manual trigger is the safe first rollout. After its project mapping and upload behavior are verified, a follow-up can trigger the same workflow automatically when `src/locales/en-US.json` changes on `main`. Pulling completed target-language translations back into a GitHub pull request remains a separate next step.
 
 ## Current limitations and roadmap
 

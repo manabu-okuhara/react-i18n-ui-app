@@ -1,0 +1,106 @@
+name: Push Source Locale to Lokalise
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: lokalise-source-push
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  push_source_locale:
+    name: Push en-US source strings
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Validate Lokalise configuration
+        env:
+          LOKALISE_API_TOKEN: ${{ secrets.LOKALISE_API_TOKEN }}
+          LOKALISE_PROJECT_ID: ${{ secrets.LOKALISE_PROJECT_ID }}
+          LOKALISE_BASE_LANG_ISO: ${{ vars.LOKALISE_BASE_LANG_ISO }}
+        run: |
+          test -n "$LOKALISE_API_TOKEN" || {
+            echo "LOKALISE_API_TOKEN is not configured."
+            exit 1
+          }
+
+          test -n "$LOKALISE_PROJECT_ID" || {
+            echo "LOKALISE_PROJECT_ID is not configured."
+            exit 1
+          }
+
+          test -n "$LOKALISE_BASE_LANG_ISO" || {
+            echo "LOKALISE_BASE_LANG_ISO is not configured."
+            exit 1
+          }
+
+      - name: Resolve Lokalise base language
+        id: resolve_base_language
+        env:
+          LOKALISE_API_TOKEN: ${{ secrets.LOKALISE_API_TOKEN }}
+          LOKALISE_PROJECT_ID: ${{ secrets.LOKALISE_PROJECT_ID }}
+          LOKALISE_BASE_LANG_ISO: ${{ vars.LOKALISE_BASE_LANG_ISO }}
+        run: |
+          canonicalize_english_locale() {
+            case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" in
+              en|en_us|en-us) printf '%s' 'en-us' ;;
+              *) return 1 ;;
+            esac
+          }
+
+          requested_base_lang="$(canonicalize_english_locale "$LOKALISE_BASE_LANG_ISO")" || {
+            echo "LOKALISE_BASE_LANG_ISO must be en, en_US, or en-US (case-insensitive)."
+            exit 1
+          }
+
+          project_response="$(curl --fail --silent --show-error \
+            --header "X-Api-Token: $LOKALISE_API_TOKEN" \
+            --header "Accept: application/json" \
+            "https://api.lokalise.com/api2/projects/$LOKALISE_PROJECT_ID")"
+          project_base_lang="$(printf '%s' "$project_response" | jq -r '.base_language_iso // empty')"
+
+          test -n "$project_base_lang" || {
+            echo "Lokalise did not return a project base language."
+            exit 1
+          }
+
+          resolved_base_lang="$(canonicalize_english_locale "$project_base_lang")" || {
+            echo "The Lokalise project base language is not en, en_US, or en-US."
+            exit 1
+          }
+
+          test "$requested_base_lang" = "$resolved_base_lang" || {
+            echo "The configured and project base languages do not match."
+            exit 1
+          }
+
+          echo "Using the exact Lokalise project base language: $project_base_lang"
+          echo "base_lang=$project_base_lang" >> "$GITHUB_OUTPUT"
+
+      - name: Validate source locale JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('src/locales/en-US.json', 'utf8'))"
+
+      - name: Push source strings to Lokalise
+        uses: lokalise/lokalise-push-action@v5.5.0
+        with:
+          api_token: ${{ secrets.LOKALISE_API_TOKEN }}
+          project_id: ${{ secrets.LOKALISE_PROJECT_ID }}
+          base_lang: ${{ steps.resolve_base_language.outputs.base_lang }}
+          translations_path: src/locales
+          name_pattern: en-US.json
+          file_ext: json
+          use_tag_tracking: true
+          additional_params: >
+            {
+              "convert_placeholders": false,
+              "detect_icu_plurals": true
+            }
