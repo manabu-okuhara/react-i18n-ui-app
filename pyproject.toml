@@ -1,0 +1,9 @@
+[project]
+name = "react-i18n-localization-automation"
+version = "0.1.0"
+description = "Python localization automation exercises for the React i18n demo"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests_python"]

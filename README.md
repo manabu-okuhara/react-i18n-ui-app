@@ -227,13 +227,40 @@ Automated coverage includes:
 - deterministic and AI-service QA behavior
 - English operational UI across selected locales
 
+## Python localization automation
+
+The repository also treats the React application as a realistic target for a separate Python localization-tooling layer. The Python CLI reads the same JSON bundles used by React and reports blocking errors and non-blocking warnings without participating in the browser runtime.
+
+The current checks cover:
+
+- missing and extra resource keys
+- duplicate JSON keys and duplicate English source values
+- empty translations
+- simple and ICU placeholder parity
+- required ICU plural `other` categories while allowing locale-specific plural rules
+- target values that remain identical to English
+- BCP 47-style locale filenames
+
+Run the linter and its tests locally:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --requirement requirements-python-dev.txt
+python -m localization_tools.cli
+python -m pytest
+```
+
+The TMS client exercise is intentionally provider-neutral and tested with mocked HTTP responses. It demonstrates fail-fast token validation, JSON payload handling, non-retryable authentication errors, exponential backoff, and bounded retries for rate limits and temporary server failures without writing to a real TMS during CI.
+
 ## CI and continuous-localization workflow
 
-The repository includes three internationalization-focused GitHub Actions workflows. Two run on pull requests, and one manually pushes reviewed English source strings to Lokalise:
+The repository includes four internationalization-focused GitHub Actions workflows. Three run on pull requests, and one manually pushes reviewed English source strings to Lokalise:
 
 - [`.github/workflows/codex-i18n-review.yml`](.github/workflows/codex-i18n-review.yml)
 - [`.github/workflows/lokalise-duplicate-check.yml`](.github/workflows/lokalise-duplicate-check.yml)
 - [`.github/workflows/lokalise-push.yml`](.github/workflows/lokalise-push.yml)
+- [`.github/workflows/python-localization-check.yml`](.github/workflows/python-localization-check.yml)
 
 ### Codex i18n review
 
@@ -255,6 +282,10 @@ After reviewed source changes are merged, the **Push Source Locale to Lokalise**
 The integration requires the GitHub Actions secrets `LOKALISE_API_TOKEN` and `LOKALISE_PROJECT_ID`, plus a repository variable named `LOKALISE_BASE_LANG_ISO`. The variable accepts `en`, `en_US`, or `en-US` case-insensitively. Before uploading, the workflow retrieves the project's base language and passes Lokalise's exact configured value to the push action.
 
 The manual trigger is the safe first rollout. After its project mapping and upload behavior are verified, a follow-up can trigger the same workflow automatically when `src/locales/en-US.json` changes on `main`. Pulling completed target-language translations back into a GitHub pull request remains a separate next step.
+
+### Python localization check
+
+The Python workflow runs the resource linter and pytest suite when locale bundles or Python automation files change. It uploads both human-readable Markdown and machine-readable JSON reports, adds the report to the GitHub Actions summary, and blocks the pull request when resource errors are present. Warnings remain visible without blocking the merge.
 
 ## Current limitations and roadmap
 
