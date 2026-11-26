@@ -278,7 +278,7 @@ The Codex workflow:
 
 The Lokalise workflow compares changed English source entries with the configured Lokalise project and reports duplicate keys or duplicate English values.
 
-After reviewed source changes are merged, the **Push Source Locale to Lokalise** workflow can be started manually from GitHub Actions. It validates and uploads only [`src/locales/en-US.json`](src/locales/en-US.json), preserves application-owned placeholder syntax, detects ICU plural messages, and waits for Lokalise to finish processing the upload.
+After reviewed source changes are merged, the **Push Source Locale to Lokalise** workflow can be started manually from GitHub Actions. Before uploading only [`src/locales/en-US.json`](src/locales/en-US.json), it runs the full Python localization resource linter and uploads its Markdown/JSON validation report. Blocking issues—including invalid JSON, duplicate keys, key or placeholder mismatches, and invalid ICU plural structure—stop the upload. It preserves application-owned placeholder syntax, detects ICU plural messages, and waits for Lokalise to finish processing the upload.
 
 The integration requires the GitHub Actions secrets `LOKALISE_API_TOKEN` and `LOKALISE_PROJECT_ID`, plus a repository variable named `LOKALISE_BASE_LANG_ISO`. The variable accepts `en`, `en_US`, or `en-US` case-insensitively. Before uploading, the workflow retrieves the project's base language and passes Lokalise's exact configured value to the push action.
 
