@@ -255,11 +255,12 @@ The TMS client exercise is intentionally provider-neutral and tested with mocked
 
 ## CI and continuous-localization workflow
 
-The repository includes four internationalization-focused GitHub Actions workflows. Three run on pull requests, and one manually pushes reviewed English source strings to Lokalise:
+The repository includes five internationalization-focused GitHub Actions workflows. Three run on pull requests, one manually pushes reviewed English source strings to Lokalise, and one polls or receives a verified dispatch event for returned translations:
 
 - [`.github/workflows/codex-i18n-review.yml`](.github/workflows/codex-i18n-review.yml)
 - [`.github/workflows/lokalise-duplicate-check.yml`](.github/workflows/lokalise-duplicate-check.yml)
 - [`.github/workflows/lokalise-push.yml`](.github/workflows/lokalise-push.yml)
+- [`.github/workflows/lokalise-pull-validate.yml`](.github/workflows/lokalise-pull-validate.yml)
 - [`.github/workflows/python-localization-check.yml`](.github/workflows/python-localization-check.yml)
 
 ### Codex i18n review
@@ -281,7 +282,13 @@ After reviewed source changes are merged, the **Push Source Locale to Lokalise**
 
 The integration requires the GitHub Actions secrets `LOKALISE_API_TOKEN` and `LOKALISE_PROJECT_ID`, plus a repository variable named `LOKALISE_BASE_LANG_ISO`. The variable accepts `en`, `en_US`, or `en-US` case-insensitively. Before uploading, the workflow retrieves the project's base language and passes Lokalise's exact configured value to the push action.
 
-The manual trigger is the safe first rollout. After its project mapping and upload behavior are verified, a follow-up can trigger the same workflow automatically when `src/locales/en-US.json` changes on `main`. Pulling completed target-language translations back into a GitHub pull request remains a separate next step.
+The manual trigger is the safe first rollout. After its project mapping and upload behavior are verified, a follow-up can trigger the same workflow automatically when `src/locales/en-US.json` changes on `main`.
+
+### Returned Lokalise translations
+
+The **Pull, Validate, and Propose Lokalise Translations** workflow runs manually, hourly, or after a secure webhook relay sends a `lokalise-translations-complete` repository-dispatch event. It downloads `reviewed_only` JSON exports, never overwrites repository-owned `en-US.json`, validates the returned bundles with the Python linter, runs Python and React tests, and creates an automated pull request only after all blocking checks pass. It uploads export metadata and Markdown/JSON validation reports for review.
+
+A production webhook relay should verify the Lokalise webhook secret before dispatching GitHub. The workflow itself does not expose a public webhook endpoint. It requires `LOKALISE_API_TOKEN` and `LOKALISE_PROJECT_ID`; its `LOKALISE_RETURN_FILTER` setting defaults to `reviewed_only`.
 
 ### Python localization check
 
